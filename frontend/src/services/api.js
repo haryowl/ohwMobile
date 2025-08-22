@@ -1,9 +1,12 @@
 // Enhanced API Service with Offline Support
 import offlineSyncService from './offlineSync';
 
+// Export BASE_URL for other components
+export const BASE_URL = process.env.REACT_APP_API_URL || '';
+
 class ApiService {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || '';
+    this.baseURL = BASE_URL;
     this.isOnline = navigator.onLine;
     this.setupEventListeners();
   }

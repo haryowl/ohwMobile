@@ -34,6 +34,11 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
   const [showSyncNotification, setShowSyncNotification] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
 
+  const displaySyncNotification = (message) => {
+    setSyncMessage(message);
+    setShowSyncNotification(true);
+  };
+
   useEffect(() => {
     // Initial status check
     updateStatus();
@@ -49,13 +54,13 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
     const handleOnline = () => {
       setIsOnline(true);
       updateStatus();
-      showSyncNotification('Connection restored');
+      displaySyncNotification('Connection restored');
     };
 
     const handleOffline = () => {
       setIsOnline(false);
       updateStatus();
-      showSyncNotification('Connection lost - working offline');
+      displaySyncNotification('Connection lost - working offline');
     };
 
     window.addEventListener('connectionStatusChanged', handleConnectionChange);
@@ -78,11 +83,6 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
     setSyncStatus(status);
   };
 
-  const showSyncNotification = (message) => {
-    setSyncMessage(message);
-    setShowSyncNotification(true);
-  };
-
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -94,10 +94,10 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
   const handleForceSync = async () => {
     try {
       await apiService.forceSync();
-      showSyncNotification('Sync completed');
+      displaySyncNotification('Sync completed');
       updateStatus();
     } catch (error) {
-      showSyncNotification('Sync failed: ' + error.message);
+      displaySyncNotification('Sync failed: ' + error.message);
     }
     handleMenuClose();
   };
@@ -105,10 +105,10 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
   const handleClearPendingSync = async () => {
     try {
       await apiService.clearPendingSync();
-      showSyncNotification('Pending sync cleared');
+      displaySyncNotification('Pending sync cleared');
       updateStatus();
     } catch (error) {
-      showSyncNotification('Failed to clear pending sync');
+      displaySyncNotification('Failed to clear pending sync');
     }
     handleMenuClose();
   };
@@ -127,9 +127,9 @@ const ConnectionStatus = ({ showDetails = true, position = 'top-right' }) => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showSyncNotification('Offline data exported');
+      displaySyncNotification('Offline data exported');
     } catch (error) {
-      showSyncNotification('Failed to export offline data');
+      displaySyncNotification('Failed to export offline data');
     }
     handleMenuClose();
   };
