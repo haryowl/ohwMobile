@@ -1,6 +1,13 @@
-# OHW Mobile Application - Galileo Sky Parser
+# 🚀 OHW Mobile Application - Galileo Sky Parser
 
-A comprehensive mobile IoT tracking and telemetry application with enhanced device management, real-time monitoring, and peer-to-peer synchronization capabilities.
+**Enhanced IoT Device Management with Real-time Monitoring**
+
+## 📱 **MOBILE INSTALLATION URL**
+```
+https://haryowl.github.io/ohw-enhance/
+```
+
+**🚀 DEPLOYMENT STATUS: ACTIVE - Ready for mobile installation!**
 
 ## 🌟 Features
 
