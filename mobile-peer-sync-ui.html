@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Peer-to-Peer Sync - Galileosky Parser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        .content {
+            padding: 15px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-entry.info { color: #667eea; }
+        .log-entry.success { color: #28a745; }
+        .log-entry.error { color: #dc3545; }
+        .log-entry.warning { color: #ffc107; }
+
+        .device-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.8em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .device-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .device-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-item.connected {
+            border-left: 4px solid #28a745;
+        }
+
+        .device-item.disconnected {
+            border-left: 4px solid #dc3545;
+        }
+
+        .device-details {
+            flex: 1;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .device-status {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+
+        .device-records {
+            font-size: 0.8em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* Mobile-specific optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+            
+            .section {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.85em;
+                margin: 3px;
+            }
+            
+            .input-group input {
+                padding: 10px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Mobile Peer-to-Peer Sync</h1>
+            <p>Galileosky Parser - Mobile Optimized</p>
+        </div>
+
+        <div class="content">
+            <!-- Sync Status Bar -->
+            <div class="section" id="syncStatusSection" style="display: none;">
+                <h3>🔄 Sync Status</h3>
+                <div class="input-group">
+                    <label>Sync Status:</label>
+                    <div id="syncStatusBar" class="status info">Ready to sync</div>
+                </div>
+                <div class="input-group">
+                    <label>Progress:</label>
+                    <div class="progress-bar">
+                        <div id="syncProgress" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="syncProgressText">0%</div>
+                </div>
+                <div class="input-group">
+                    <label>Last Sync Time:</label>
+                    <div id="lastSyncTime" class="device-info">Never</div>
+                </div>
+                <div class="input-group">
+                    <label>Sync Results:</label>
+                    <div id="syncResults" class="device-info">No sync performed yet</div>
+                </div>
+            </div>
+
+            <!-- Server Status Section -->
+            <div class="section">
+                <h3>🖥️ Server Status</h3>
+                <div class="input-group">
+                    <label>Connection Status:</label>
+                    <div id="connectionStatus" class="status info">Checking connection...</div>
+                </div>
+                <div class="input-group">
+                    <label>Server IP:</label>
+                    <div id="serverIP" class="device-info">Detecting...</div>
+                </div>
+                <div class="input-group">
+                    <label>Last Update:</label>
+                    <div id="lastUpdate" class="device-info">Never</div>
+                </div>
+            </div>
+
+            <!-- Peer Configuration Section -->
+            <div class="section">
+                <h3>🔄 Peer Configuration</h3>
+                <div class="input-group">
+                    <label for="peerUrl">Peer Server URL:</label>
+                    <input type="text" id="peerUrl" placeholder="http://192.168.1.100:3001" />
+                </div>
+                <div class="input-group">
+                    <button class="btn btn-primary" onclick="addPeer()">Add Peer</button>
+                    <button class="btn btn-success" onclick="testConnection()">Test Connection</button>
+                </div>
+            </div>
+
+            <!-- Data Management Section -->
+            <div class="section">
+                <h3>📊 Data Management</h3>
+                <div class="input-group">
+                    <label>Current Records:</label>
+                    <div id="recordCount" class="device-info">0</div>
+                </div>
+                <div class="input-group">
+                    <label>Connected Devices:</label>
+                    <div id="deviceCount" class="device-info">0</div>
+                </div>
+                <div class="input-group">
+                    <label>Active Connections:</label>
+                    <div id="activeConnections" class="device-info">0</div>
+                </div>
+                <div class="input-group">
+                    <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh Data</button>
+                    <button class="btn btn-success" onclick="exportData()">📥 Export Data</button>
+                    <button class="btn btn-warning" onclick="syncData()" id="syncButton">🔄 Sync Data</button>
+                    <button class="btn btn-danger" onclick="clearData()">🗑️ Clear Data</button>
+                </div>
+            </div>
+
+            <!-- Device List Section -->
+            <div class="section">
+                <h3>📱 Connected Devices</h3>
+                <div id="deviceList" class="device-list">
+                    <div class="device-info">No devices connected</div>
+                </div>
+            </div>
+
+            <!-- Activity Log Section -->
+            <div class="section">
+                <h3>📝 Activity Log</h3>
+                <div id="activityLog" class="log">
+                    <div class="log-entry info">Mobile Peer Sync initialized...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket = null;
+        let peers = [];
+        let isConnected = false;
+        let lastDataUpdate = null;
+        let syncInProgress = false;
+
+        // DOM elements
+        const syncStatusSection = document.getElementById('syncStatusSection');
+        const syncStatusBar = document.getElementById('syncStatusBar');
+        const syncProgress = document.getElementById('syncProgress');
+        const syncProgressText = document.getElementById('syncProgressText');
+        const lastSyncTime = document.getElementById('lastSyncTime');
+        const syncResults = document.getElementById('syncResults');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const serverIP = document.getElementById('serverIP');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const peerUrl = document.getElementById('peerUrl');
+        const recordCount = document.getElementById('recordCount');
+        const deviceCount = document.getElementById('deviceCount');
+        const activeConnections = document.getElementById('activeConnections');
+        const deviceList = document.getElementById('deviceList');
+        const activityLog = document.getElementById('activityLog');
+        const syncButton = document.getElementById('syncButton');
+
+        // Initialize the application
+        function init() {
+            log('info', 'Initializing Mobile Peer Sync...');
+            
+            // Initialize Socket.IO connection
+            initSocketIO();
+            
+            // Load saved peers
+            loadPeers();
+            
+            // Initial data refresh
+            refreshData();
+            
+            // Get server IP
+            getServerIP();
+            
+            log('success', 'Mobile Peer Sync initialized successfully');
+        }
+
+        // Initialize Socket.IO connection
+        function initSocketIO() {
+            // Socket.IO is not needed for peer sync UI
+            // Peer sync uses direct HTTP requests
+            console.log('📱 Peer sync UI - using direct HTTP requests');
+            isConnected = true;
+            connectionStatus.textContent = 'Ready for peer sync';
+            connectionStatus.className = 'status success';
+            log('success', 'Peer sync UI ready - using direct HTTP requests');
+        }
+
+        // Get server IP address
+        async function getServerIP() {
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    const currentIP = window.location.hostname;
+                    serverIP.textContent = `${currentIP}:${window.location.port}`;
+                    log('info', `Server IP: ${currentIP}:${window.location.port}`);
+                }
+            } catch (error) {
+                log('error', `Failed to get server IP: ${error.message}`);
+            }
+        }
+
+        // Add a new peer
+        function addPeer() {
+            const url = peerUrl.value.trim();
+            if (!url) {
+                log('error', 'Please enter a peer URL');
+                return;
+            }
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                log('error', 'Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+            
+            // Check if peer already exists
+            if (peers.find(p => p.url === url)) {
+                log('error', 'Peer already exists');
+                return;
+            }
+            
+            const peer = {
+                id: Date.now().toString(),
+                url: url,
+                name: `Peer ${peers.length + 1}`,
+                status: 'connecting',
+                lastSync: null
+            };
+            
+            peers.push(peer);
+            savePeers();
+            
+            log('info', `Adding peer: ${url}`);
+            
+            // Test connection
+            testPeerConnection(peer);
+        }
+
+        // Test peer connection
+        async function testPeerConnection(peer) {
+            try {
+                const response = await fetch(`${peer.url}/api/status`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    peer.status = 'online';
+                    peer.lastSync = new Date().toISOString();
+                    log('success', `Peer ${peer.name} is online`);
+                } else {
+                    peer.status = 'offline';
+                    log('error', `Peer ${peer.name} is offline`);
+                }
+            } catch (error) {
+                peer.status = 'offline';
+                log('error', `Failed to connect to peer ${peer.name}: ${error.message}`);
+            }
+            
+            savePeers();
+        }
+
+        // Test connection to current peer URL
+        async function testConnection() {
+            const url = peerUrl.value.trim();
+            if (!url) {
+                log('error', 'Please enter a peer URL first');
+                return;
+            }
+            
+            log('info', `Testing connection to: ${url}`);
+            
+            try {
+                // Test multiple endpoints
+                const endpoints = [
+                    '/api/status',
+                    '/peer/status',
+                    '/mobile-peer-sync-ui.html'
+                ];
+                
+                let successCount = 0;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`${url}${endpoint}`, {
+                            method: 'GET',
+                            timeout: 5000
+                        });
+                        
+                        if (response.ok) {
+                            log('success', `✅ ${endpoint} - OK`);
+                            successCount++;
+                        } else {
+                            log('warning', `⚠️ ${endpoint} - HTTP ${response.status}`);
+                        }
+                    } catch (error) {
+                        log('error', `❌ ${endpoint} - ${error.message}`);
+                    }
+                }
+                
+                if (successCount > 0) {
+                    log('success', `Connection test completed: ${successCount}/${endpoints.length} endpoints working`);
+                } else {
+                    log('error', 'All connection tests failed. Check if peer server is running.');
+                }
+                
+            } catch (error) {
+                log('error', `Connection test failed: ${error.message}`);
+            }
+        }
+
+        // Refresh data from server
+        async function refreshData() {
+            try {
+                // Get data statistics
+                const dataResponse = await fetch('/api/data');
+                if (dataResponse.ok) {
+                    const data = await dataResponse.json();
+                    
+                    // Debug: Log the device data structure
+                    console.log('📊 Received data from /api/data:', {
+                        totalRecords: data.totalRecords,
+                        totalDevices: data.totalDevices,
+                        devices: data.devices,
+                        deviceKeys: data.devices ? Object.keys(data.devices) : [],
+                        lastIMEI: data.lastIMEI
+                    });
+                    
+                    updateDataStats(data);
+                    
+                    // Convert devices object to array for display
+                    let devicesArray = [];
+                    if (data.devices) {
+                        if (Array.isArray(data.devices)) {
+                            devicesArray = data.devices;
+                        } else {
+                            // Convert object to array
+                            devicesArray = Object.entries(data.devices).map(([imei, deviceInfo]) => ({
+                                deviceId: imei, // Use IMEI as deviceId for display
+                                imei: imei,
+                                lastSeen: deviceInfo.lastSeen,
+                                totalRecords: deviceInfo.totalRecords,
+                                connectionId: deviceInfo.clientAddress || deviceInfo.connectionId,
+                                lastLocation: deviceInfo.lastLocation,
+                                isConnected: deviceInfo.clientAddress ? true : false
+                            }));
+                        }
+                    }
+                    
+                    updateDeviceList(devicesArray);
+                    lastDataUpdate = new Date();
+                    lastUpdate.textContent = lastDataUpdate.toLocaleTimeString();
+                    log('success', `Refreshed data: ${data.totalRecords || 0} records, ${data.totalDevices || 0} devices`);
+                } else {
+                    log('error', 'Failed to refresh data');
+                }
+
+                // Get server status
+                const statusResponse = await fetch('/api/status');
+                if (statusResponse.ok) {
+                    const status = await statusResponse.json();
+                    activeConnections.textContent = status.activeConnections || 0;
+                    log('info', `Server status: ${status.activeConnections || 0} active connections`);
+                }
+            } catch (error) {
+                log('error', `Refresh error: ${error.message}`);
+            }
+        }
+
+        // Export data
+        async function exportData() {
+            try {
+                const response = await fetch('/api/data/export');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `galileosky_data_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    log('success', 'Data exported successfully');
+                } else {
+                    log('error', 'Failed to export data');
+                }
+            } catch (error) {
+                log('error', `Export error: ${error.message}`);
+            }
+        }
+
+        // Sync data with peers
+        async function syncData() {
+            if (syncInProgress) {
+                log('warning', 'Sync already in progress, please wait...');
+                return;
+            }
+
+            if (peers.length === 0) {
+                log('warning', 'No peers configured for sync');
+                return;
+            }
+
+            // Show sync status section
+            syncStatusSection.style.display = 'block';
+            syncInProgress = true;
+            syncButton.disabled = true;
+            syncButton.textContent = '🔄 Syncing...';
+
+            // Initialize sync progress
+            updateSyncProgress(0, 'Initializing sync...');
+            syncStatusBar.textContent = 'Starting sync...';
+            syncStatusBar.className = 'status info';
+
+            const onlinePeers = peers.filter(p => p.status === 'online');
+            if (onlinePeers.length === 0) {
+                updateSyncProgress(100, 'No online peers available');
+                syncStatusBar.textContent = 'No online peers available';
+                syncStatusBar.className = 'status warning';
+                syncInProgress = false;
+                syncButton.disabled = false;
+                syncButton.textContent = '🔄 Sync Data';
+                return;
+            }
+
+            log('info', `Starting sync with ${onlinePeers.length} online peers`);
+            
+            let totalNewRecords = 0;
+            let successfulSyncs = 0;
+            let failedSyncs = 0;
+
+            // Get current data from server
+            let currentData = null;
+            try {
+                const dataResponse = await fetch('/api/data');
+                if (dataResponse.ok) {
+                    currentData = await dataResponse.json();
+                    log('info', `📊 Current data: ${currentData.totalRecords || 0} records, ${currentData.totalDevices || 0} devices`);
+                    
+                    // Debug: Log the actual records count
+                    console.log('📱 Current data details:', {
+                        totalRecords: currentData.totalRecords,
+                        actualRecordsLength: currentData.records ? currentData.records.length : 0,
+                        devices: currentData.devices ? Object.keys(currentData.devices) : [],
+                        lastIMEI: currentData.lastIMEI
+                    });
+                } else {
+                    log('error', 'Failed to get current data for sync');
+                    syncInProgress = false;
+                    syncButton.disabled = false;
+                    syncButton.textContent = '🔄 Sync Data';
+                    return;
+                }
+            } catch (error) {
+                log('error', `Failed to get current data: ${error.message}`);
+                syncInProgress = false;
+                syncButton.disabled = false;
+                syncButton.textContent = '🔄 Sync Data';
+                return;
+            }
+
+            for (let i = 0; i < onlinePeers.length; i++) {
+                const peer = onlinePeers[i];
+                const progress = Math.round(((i + 1) / onlinePeers.length) * 100);
+                
+                updateSyncProgress(progress, `Syncing with ${peer.name}...`);
+                syncStatusBar.textContent = `Syncing with ${peer.name}...`;
+                
+                try {
+                    log('info', `Syncing with peer: ${peer.name} (${peer.url})`);
+                    
+                    // Debug: Log the data being sent
+                    console.log('📱 Sync data being sent:', {
+                        totalRecords: currentData.totalRecords,
+                        totalDevices: currentData.totalDevices,
+                        devices: currentData.devices,
+                        deviceKeys: currentData.devices ? Object.keys(currentData.devices) : [],
+                        lastIMEI: currentData.lastIMEI
+                    });
+                    
+                    // Create proper devices object with IMEI keys for sync
+                    const devicesForSync = {};
+                    if (currentData.devices) {
+                        Object.entries(currentData.devices).forEach(([key, deviceInfo]) => {
+                            // Use deviceId (IMEI) as the key instead of numeric key
+                            const imei = deviceInfo.deviceId || key;
+                            devicesForSync[imei] = deviceInfo;
+                        });
+                    }
+                    
+                    console.log('📱 Devices for sync with IMEI keys:', Object.keys(devicesForSync));
+                    
+                    // Perform peer sync using the peer sync endpoint with ACTUAL DATA
+                    const response = await fetch(`${peer.url}/peer/sync`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            deviceId: 'mobile-peer-sync-ui',
+                            records: currentData.records || [], // ✅ SEND ACTUAL RECORDS
+                            devices: devicesForSync, // ✅ SEND DEVICES WITH IMEI KEYS
+                            lastIMEI: currentData.lastIMEI || null, // ✅ SEND ACTUAL LAST IMEI
+                            exportTime: new Date().toISOString()
+                        }),
+                        timeout: 30000
+                    });
+
+                    if (response.ok) {
+                        const syncResult = await response.json();
+                        
+                        if (syncResult.success) {
+                            const newRecords = syncResult.syncResult?.newRecords || 0;
+                            totalNewRecords += newRecords;
+                            successfulSyncs++;
+                            
+                            log('success', `✅ Sync with ${peer.name} successful: ${newRecords} new records`);
+                            log('info', `📤 Sent: ${currentData.totalRecords || 0} records to peer`);
+                            log('info', `📥 Received: ${newRecords} new records from peer`);
+                            peer.lastSync = new Date().toISOString();
+                            
+                            // Update sync results
+                            syncResults.textContent = `✅ ${successfulSyncs} successful, ${failedSyncs} failed, ${totalNewRecords} new records`;
+                        } else {
+                            failedSyncs++;
+                            log('error', `❌ Sync with ${peer.name} failed: ${syncResult.error || 'Unknown error'}`);
+                        }
+                    } else {
+                        failedSyncs++;
+                        log('error', `❌ HTTP error syncing with ${peer.name}: ${response.status}`);
+                    }
+                } catch (error) {
+                    failedSyncs++;
+                    log('error', `❌ Sync error with ${peer.name}: ${error.message}`);
+                }
+
+                // Small delay between syncs
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Final sync status
+            updateSyncProgress(100, 'Sync completed');
+            
+            if (successfulSyncs > 0) {
+                syncStatusBar.textContent = `✅ Sync Complete: ${successfulSyncs} successful, ${totalNewRecords} new records`;
+                syncStatusBar.className = 'status success';
+                lastSyncTime.textContent = new Date().toLocaleString();
+                
+                log('success', `🎉 Sync completed successfully!`);
+                log('success', `📊 Results: ${successfulSyncs} successful syncs, ${totalNewRecords} new records`);
+                
+                // Refresh data to show updated counts
+                await refreshData();
+            } else {
+                syncStatusBar.textContent = `❌ Sync Failed: All ${failedSyncs} attempts failed`;
+                syncStatusBar.className = 'status error';
+                log('error', `❌ Sync failed: All ${failedSyncs} attempts failed`);
+            }
+
+            // Reset sync state
+            syncInProgress = false;
+            syncButton.disabled = false;
+            syncButton.textContent = '🔄 Sync Data';
+            
+            // Hide sync status after 5 seconds
+            setTimeout(() => {
+                syncStatusSection.style.display = 'none';
+            }, 5000);
+        }
+
+        // Clear data
+        async function clearData() {
+            if (!confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/data/clear', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    updateDataStats([]);
+                    log('success', 'All data cleared successfully');
+                } else {
+                    log('error', 'Failed to clear data');
+                }
+            } catch (error) {
+                log('error', `Clear error: ${error.message}`);
+            }
+        }
+
+        // Handle new data from Socket.IO
+        function handleNewData(data) {
+            log('info', `New data received: ${data.deviceId || 'Unknown device'}`);
+            lastDataUpdate = new Date();
+            lastUpdate.textContent = lastDataUpdate.toLocaleTimeString();
+            
+            // Update stats
+            refreshData();
+        }
+
+        // Update sync progress
+        function updateSyncProgress(percentage, text) {
+            syncProgress.style.width = `${percentage}%`;
+            syncProgressText.textContent = `${percentage}% - ${text}`;
+        }
+
+        // Update device list
+        function updateDeviceList(devices) {
+            console.log('📱 updateDeviceList called with:', devices);
+            
+            // Handle both array and object formats
+            let devicesArray = devices;
+            if (devices && !Array.isArray(devices)) {
+                // Convert object to array if needed
+                devicesArray = Object.entries(devices).map(([imei, deviceInfo]) => ({
+                    deviceId: imei,
+                    imei: imei,
+                    lastSeen: deviceInfo.lastSeen,
+                    totalRecords: deviceInfo.totalRecords,
+                    connectionId: deviceInfo.clientAddress || deviceInfo.connectionId,
+                    lastLocation: deviceInfo.lastLocation,
+                    isConnected: deviceInfo.clientAddress ? true : false
+                }));
+            }
+            
+            if (!devicesArray || devicesArray.length === 0) {
+                deviceList.innerHTML = '<div class="device-info">No devices connected</div>';
+                return;
+            }
+
+            deviceList.innerHTML = '';
+            devicesArray.forEach((device, index) => {
+                console.log(`📱 Processing device ${index}:`, device);
+                
+                const deviceItem = document.createElement('div');
+                deviceItem.className = `device-item ${device.isConnected ? 'connected' : 'disconnected'}`;
+                
+                const statusText = device.isConnected ? '🟢 Connected' : '🔴 Disconnected';
+                const lastSeen = device.lastSeen ? new Date(device.lastSeen).toLocaleString() : 'Never';
+                
+                // Use IMEI as device identifier, fallback to deviceId if IMEI not available
+                const deviceIdentifier = device.deviceId || device.imei || 'Unknown Device';
+                
+                console.log(`📱 Device ${index} identifier: ${deviceIdentifier}`);
+                
+                deviceItem.innerHTML = `
+                    <div class="device-details">
+                        <div class="device-name">📱 ${deviceIdentifier}</div>
+                        <div class="device-status">${statusText} • Last seen: ${lastSeen}</div>
+                    </div>
+                    <div class="device-records">${device.totalRecords || 0} records</div>
+                `;
+                
+                deviceList.appendChild(deviceItem);
+            });
+        }
+
+        // Update data statistics
+        function updateDataStats(data) {
+            recordCount.textContent = data.totalRecords || 0;
+            deviceCount.textContent = data.totalDevices || 0;
+        }
+
+        // Save peers to localStorage
+        function savePeers() {
+            localStorage.setItem('galileosky_peers', JSON.stringify(peers));
+        }
+
+        // Load peers from localStorage
+        function loadPeers() {
+            const saved = localStorage.getItem('galileosky_peers');
+            if (saved) {
+                peers = JSON.parse(saved);
+                log('info', `Loaded ${peers.length} saved peers`);
+            }
+        }
+
+        // Add log entry
+        function log(type, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+            
+            // Keep only last 50 log entries
+            while (activityLog.children.length > 50) {
+                activityLog.removeChild(activityLog.firstChild);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html> 
