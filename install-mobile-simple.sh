@@ -166,6 +166,20 @@ class GalileoSkyParser {
         return crc;
     }
 
+    // Validate packet CRC
+    validatePacketCRC(packet) {
+        if (packet.length < 5) return false; // Minimum packet size
+        
+        const packetData = packet.slice(0, packet.length - 2); // Exclude CRC
+        const receivedCRC = packet.readUInt16LE(packet.length - 2);
+        const calculatedCRC = this.calculateCRC16Modbus(packetData);
+        
+        const isValid = receivedCRC === calculatedCRC;
+        console.log(`🔍 CRC Validation - Received: 0x${receivedCRC.toString(16).padStart(4, '0')}, Calculated: 0x${calculatedCRC.toString(16).padStart(4, '0')}, Valid: ${isValid}`);
+        
+        return isValid;
+    }
+
     // Tag definitions for GalileoSky packets
     getTagDefinitions() {
         return {
@@ -430,6 +444,50 @@ class GalileoSkyParser {
 // Initialize parser
 const galileoSkyParser = new GalileoSkyParser();
 
+// Device tracking and connection management
+const connectionToIMEI = new Map();
+const deviceStats = new Map();
+
+// Helper function to get IMEI from connection
+function getIMEIFromConnection(clientAddress) {
+    return connectionToIMEI.get(clientAddress) || null;
+}
+
+// Helper function to update device tracking
+function updateDeviceTracking(imei, clientAddress, data) {
+    // Map connection to IMEI
+    if (clientAddress) {
+        connectionToIMEI.set(clientAddress, imei);
+    }
+    
+    console.log(`📱 Device tracking update - IMEI: ${imei}, Address: ${clientAddress}`);
+    
+    // Update device stats
+    if (!deviceStats.has(imei)) {
+        console.log(`📱 Creating new device entry for IMEI: ${imei}`);
+        deviceStats.set(imei, {
+            firstSeen: new Date().toISOString(),
+            lastSeen: new Date().toISOString(),
+            recordCount: 0,
+            totalRecords: 0,
+            clientAddress: clientAddress,
+            lastLocation: null
+        });
+    }
+    
+    const device = deviceStats.get(imei);
+    device.lastSeen = new Date().toISOString();
+    device.recordCount++;
+    device.totalRecords++;
+    device.clientAddress = clientAddress;
+    
+    if (data.coordinates) {
+        device.lastLocation = data.coordinates;
+    }
+    
+    console.log(`📱 Device ${imei} stats updated - Records: ${device.totalRecords}, Last seen: ${device.lastSeen}`);
+}
+
 // TCP Server for GalileoSky devices
 const tcpServer = net.createServer((socket) => {
     const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
@@ -463,6 +521,14 @@ const tcpServer = net.createServer((socket) => {
                 // Check if we have a complete packet (including CRC)
                 if (buffer.length < totalLength + 2) {  // +2 for CRC
                     console.log(`⚠️ Incomplete packet - waiting for more data. Buffer: ${buffer.length}, Need: ${totalLength + 2}`);
+                    
+                    // Send 023FFA confirmation packet for incomplete data (following original protocol)
+                    const incompleteConfirmation = Buffer.from([0x02, 0x3F, 0xFA]);
+                    if (socket.writable) {
+                        socket.write(incompleteConfirmation);
+                        console.log(`📤 023FFA confirmation sent for incomplete packet:`, incompleteConfirmation.toString('hex').toUpperCase());
+                    }
+                    
                     unsentData = Buffer.from(buffer);
                     break;
                 }
@@ -470,6 +536,19 @@ const tcpServer = net.createServer((socket) => {
                 // Extract the complete packet
                 const packet = buffer.slice(0, totalLength + 2);
                 buffer = buffer.slice(totalLength + 2);
+                
+                // Validate packet CRC before processing
+                if (!galileoSkyParser.validatePacketCRC(packet)) {
+                    console.log(`❌ Invalid CRC for packet from ${clientAddress}`);
+                    
+                    // Send error confirmation (0x02 + 0x3F00)
+                    const errorConfirmation = Buffer.from([0x02, 0x3F, 0x00]);
+                    if (socket.writable) {
+                        socket.write(errorConfirmation);
+                        console.log(`❌ Error confirmation sent:`, errorConfirmation.toString('hex').toUpperCase());
+                    }
+                    continue;
+                }
                 
                 // Get the checksum from the received packet
                 const packetChecksum = packet.readUInt16LE(packet.length - 2);
@@ -487,6 +566,11 @@ const tcpServer = net.createServer((socket) => {
                 const parsedData = await galileoSkyParser.parsePacket(packet);
             
             if (parsedData) {
+                // Update device tracking
+                if (parsedData.imei) {
+                    updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
+                }
+                
                 // Add to records
                 const records = readData(recordsFile);
                 const newRecord = {
@@ -589,6 +673,17 @@ udpServer.on('message', async (msg, rinfo) => {
                 // Extract the complete packet
                 const packet = msg.slice(0, totalLength + 2);
                 
+                // Validate packet CRC before processing
+                if (!galileoSkyParser.validatePacketCRC(packet)) {
+                    console.log(`❌ Invalid CRC for UDP packet from ${clientAddress}`);
+                    
+                    // Send error confirmation (0x02 + 0x3F00)
+                    const errorConfirmation = Buffer.from([0x02, 0x3F, 0x00]);
+                    udpServer.send(errorConfirmation, rinfo.port, rinfo.address);
+                    console.log(`❌ UDP Error confirmation sent:`, errorConfirmation.toString('hex').toUpperCase());
+                    return;
+                }
+                
                 // Get the checksum from the received packet
                 const packetChecksum = packet.readUInt16LE(packet.length - 2);
                 
@@ -602,6 +697,11 @@ udpServer.on('message', async (msg, rinfo) => {
                 // Parse the packet data
                 const parsedData = await galileoSkyParser.parsePacket(packet);
         if (parsedData) {
+            // Update device tracking
+            if (parsedData.imei) {
+                updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
+            }
+            
             // Add to records
             const records = readData(recordsFile);
             const newRecord = {
@@ -769,6 +869,21 @@ app.get('/api/devices/:id', (req, res) => {
     }
     
     res.json(device);
+});
+
+// Get device statistics (from memory tracking)
+app.get('/api/devices/stats', (req, res) => {
+    const stats = Array.from(deviceStats.entries()).map(([imei, data]) => ({
+        imei,
+        firstSeen: data.firstSeen,
+        lastSeen: data.lastSeen,
+        recordCount: data.recordCount,
+        totalRecords: data.totalRecords,
+        clientAddress: data.clientAddress,
+        lastLocation: data.lastLocation
+    }));
+    
+    res.json(stats);
 });
 
 // Get device-specific data
