@@ -1342,10 +1342,10 @@ EOF
 # Download the full mobile frontend from the repository
 echo "📥 Downloading full mobile frontend..."
 mkdir -p ~/ohwMobile/public
-curl -s https://raw.githubusercontent.com/haryowl/ohw/main/mobile-frontend.html > ~/ohwMobile/public/mobile-frontend.html
+curl -s https://raw.githubusercontent.com/haryowl/ohwMobile/main/mobile-frontend.html > ~/ohwMobile/public/mobile-frontend.html
 
 # Verify the download
-if [ -f "~/ohwMobile/public/mobile-frontend.html" ]; then
+if [ -f ~/ohwMobile/public/mobile-frontend.html ] && [ -s ~/ohwMobile/public/mobile-frontend.html ]; then
     echo "✅ Full mobile frontend downloaded successfully"
 else
     echo "❌ Failed to download mobile frontend, creating basic version..."
