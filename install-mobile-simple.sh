@@ -439,7 +439,33 @@ const tcpServer = net.createServer((socket) => {
         try {
             console.log(`📡 Received TCP data from ${clientAddress}:`, data.toString('hex').toUpperCase());
             
+            // Parse the packet first to get the CRC for confirmation
             const parsedData = await galileoSkyParser.parsePacket(data);
+            
+            // Send confirmation packet (0x02) with CRC from original packet
+            if (data.length >= 3) {
+                const header = data.readUInt8(0);
+                const rawLength = data.readUInt16LE(1);
+                const actualLength = rawLength & 0x7FFF;
+                
+                // Check if we have enough data for CRC
+                if (data.length >= actualLength + 5) { // Header(1) + Length(2) + Data + CRC(2)
+                    const packetData = data.slice(0, actualLength + 3); // Header + Length + Data
+                    const packetCRC = data.readUInt16LE(actualLength + 3); // CRC at the end
+                    
+                    // Create confirmation packet: 0x02 + CRC (3 bytes total)
+                    const confirmationPacket = Buffer.alloc(3);
+                    confirmationPacket[0] = 0x02; // Confirmation header
+                    confirmationPacket.writeUInt16LE(packetCRC, 1); // CRC from original packet
+                    
+                    // Send confirmation back to device
+                    if (socket.writable) {
+                        socket.write(confirmationPacket);
+                        console.log(`✅ Confirmation sent to ${clientAddress}:`, confirmationPacket.toString('hex').toUpperCase());
+                    }
+                }
+            }
+            
             if (parsedData) {
                 // Add to records
                 const records = readData(recordsFile);
@@ -499,12 +525,16 @@ const tcpServer = net.createServer((socket) => {
                 console.log(`✅ Processed TCP data from ${clientAddress}`);
             }
             
-            // Send confirmation
-            socket.write(Buffer.from([0x02, 0x00, 0x00]));
+            // Confirmation already sent above in the parsing section
             
         } catch (error) {
             console.error(`❌ Error processing TCP data from ${clientAddress}:`, error);
-            socket.write(Buffer.from([0x02, 0x3F, 0x00]));
+            // Send error confirmation (0x02 + 0x3F00)
+            const errorConfirmation = Buffer.from([0x02, 0x3F, 0x00]);
+            if (socket.writable) {
+                socket.write(errorConfirmation);
+                console.log(`❌ Error confirmation sent to ${clientAddress}:`, errorConfirmation.toString('hex').toUpperCase());
+            }
         }
     });
     
@@ -525,7 +555,30 @@ udpServer.on('message', async (msg, rinfo) => {
         const clientAddress = `${rinfo.address}:${rinfo.port}`;
         console.log(`📡 Received UDP data from ${clientAddress}:`, msg.toString('hex').toUpperCase());
         
+        // Parse the packet first to get the CRC for confirmation
         const parsedData = await galileoSkyParser.parsePacket(msg);
+        
+        // Send confirmation packet (0x02) with CRC from original packet
+        if (msg.length >= 3) {
+            const header = msg.readUInt8(0);
+            const rawLength = msg.readUInt16LE(1);
+            const actualLength = rawLength & 0x7FFF;
+            
+            // Check if we have enough data for CRC
+            if (msg.length >= actualLength + 5) { // Header(1) + Length(2) + Data + CRC(2)
+                const packetData = msg.slice(0, actualLength + 3); // Header + Length + Data
+                const packetCRC = msg.readUInt16LE(actualLength + 3); // CRC at the end
+                
+                // Create confirmation packet: 0x02 + CRC (3 bytes total)
+                const confirmationPacket = Buffer.alloc(3);
+                confirmationPacket[0] = 0x02; // Confirmation header
+                confirmationPacket.writeUInt16LE(packetCRC, 1); // CRC from original packet
+                
+                // Send confirmation back to device
+                udpServer.send(confirmationPacket, rinfo.port, rinfo.address);
+                console.log(`✅ UDP Confirmation sent to ${clientAddress}:`, confirmationPacket.toString('hex').toUpperCase());
+            }
+        }
         if (parsedData) {
             // Add to records
             const records = readData(recordsFile);
@@ -585,14 +638,14 @@ udpServer.on('message', async (msg, rinfo) => {
             console.log(`✅ Processed UDP data from ${clientAddress}`);
         }
         
-        // Send confirmation
-        const response = Buffer.from([0x02, 0x00, 0x00]);
-        udpServer.send(response, rinfo.port, rinfo.address);
+        // Confirmation already sent above in the parsing section
         
     } catch (error) {
-        console.error(`❌ Error processing UDP data:`, error);
-        const errorResponse = Buffer.from([0x02, 0x3F, 0x00]);
-        udpServer.send(errorResponse, rinfo.port, rinfo.address);
+        console.error(`❌ Error processing UDP data from ${clientAddress}:`, error);
+        // Send error confirmation (0x02 + 0x3F00)
+        const errorConfirmation = Buffer.from([0x02, 0x3F, 0x00]);
+        udpServer.send(errorConfirmation, rinfo.port, rinfo.address);
+        console.log(`❌ UDP Error confirmation sent to ${clientAddress}:`, errorConfirmation.toString('hex').toUpperCase());
     }
 });
 
