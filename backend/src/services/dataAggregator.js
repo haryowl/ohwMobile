@@ -1,22 +1,37 @@
 // backend/src/services/dataAggregator.js
 
-const { DataPoint, Device } = require('../models');
+const { Record, Device } = require('../models');
 const { Op } = require('sequelize');
+const logger = require('../utils/logger');
 
 class DataAggregator {
+    async getDeviceData(deviceId) {
+        try {
+            const data = await Record.findAll({
+                where: { deviceImei: deviceId },
+                order: [['datetime', 'DESC']],
+                limit: 100
+            });
+            return data;
+        } catch (error) {
+            logger.error('Error getting device data:', error);
+            throw error;
+        }
+    }
+
     async getDeviceStatistics(deviceId, timeRange) {
         try {
             const endDate = new Date();
             const startDate = new Date(endDate - timeRange);
 
-            const data = await DataPoint.findAll({
+            const data = await Record.findAll({
                 where: {
-                    deviceId,
-                    timestamp: {
+                    deviceImei: deviceId,
+                    datetime: {
                         [Op.between]: [startDate, endDate]
                     }
                 },
-                order: [['timestamp', 'ASC']]
+                order: [['datetime', 'ASC']]
             });
 
             return this.calculateStatistics(data);
@@ -40,9 +55,9 @@ class DataAggregator {
                         }
                     }
                 }),
-                totalMessages: await DataPoint.count({
+                totalMessages: await Record.count({
                     where: {
-                        timestamp: {
+                        datetime: {
                             [Op.gt]: dayAgo
                         }
                     }
@@ -53,6 +68,19 @@ class DataAggregator {
             return stats;
         } catch (error) {
             logger.error('Error getting dashboard data:', error);
+            throw error;
+        }
+    }
+
+    async getRealtimeData() {
+        try {
+            const latestRecords = await Record.findAll({
+                order: [['datetime', 'DESC']],
+                limit: 10
+            });
+            return latestRecords;
+        } catch (error) {
+            logger.error('Error getting realtime data:', error);
             throw error;
         }
     }
@@ -71,16 +99,16 @@ class DataAggregator {
         let prevPoint = null;
         data.forEach(point => {
             // Update statistics based on point data
-            if (point.mappedData.speed) {
-                stats.averageSpeed += point.mappedData.speed;
-                stats.maxSpeed = Math.max(stats.maxSpeed, point.mappedData.speed);
+            if (point.speed) {
+                stats.averageSpeed += point.speed;
+                stats.maxSpeed = Math.max(stats.maxSpeed, point.speed);
             }
 
             if (prevPoint) {
                 // Calculate distance between points
                 const distance = this.calculateDistance(
-                    prevPoint.mappedData.location,
-                    point.mappedData.location
+                    { latitude: prevPoint.latitude, longitude: prevPoint.longitude },
+                    { latitude: point.latitude, longitude: point.longitude }
                 );
                 stats.distanceTraveled += distance;
             }

@@ -25,11 +25,16 @@ if (fs.existsSync(frontendBuildPath)) {
     app.use(express.static(frontendBuildPath));
 }
 
+
+
 // Create parser instance
 const parser = new GalileoskyParser();
 
 // WebSocket server
 const wss = new WebSocket.Server({ noServer: true });
+
+// Make WebSocket server globally accessible for performance metrics
+global.wss = wss;
 
 // Handle WebSocket upgrade
 wss.on('connection', (ws) => {
@@ -86,8 +91,33 @@ function handleWebSocketMessage(ws, data) {
     }
 }
 
-// Serve React app if frontend build exists
+// Serve mobile frontend HTML file (must be before catch-all route)
+app.get('/mobile-frontend.html', (req, res) => {
+    const mobileFrontendPath = path.join(__dirname, '../../mobile-frontend.html');
+    if (fs.existsSync(mobileFrontendPath)) {
+        res.sendFile(mobileFrontendPath);
+    } else {
+        res.status(404).json({ error: 'Mobile frontend not found' });
+    }
+});
+
+// Serve mobile frontend at /mobile route
+app.get('/mobile', (req, res) => {
+    const mobileFrontendPath = path.join(__dirname, '../../mobile-frontend.html');
+    if (fs.existsSync(mobileFrontendPath)) {
+        res.sendFile(mobileFrontendPath);
+    } else {
+        res.status(404).json({ error: 'Mobile frontend not found' });
+    }
+});
+
+// Serve React app for non-API routes (more specific catch-all)
 app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
     if (fs.existsSync(frontendBuildPath)) {
         res.sendFile(path.join(frontendBuildPath, 'index.html'));
     } else {

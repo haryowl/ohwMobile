@@ -125,24 +125,36 @@ function App() {
   const preCacheEssentialData = async () => {
     try {
       // Cache devices data
-      const devicesResponse = await fetch('/api/devices');
-      if (devicesResponse.ok) {
-        const devicesData = await devicesResponse.json();
-        await offlineSyncService.cacheApiData('/api/devices', devicesData);
+      try {
+        const devicesResponse = await fetch('/api/devices');
+        if (devicesResponse.ok && devicesResponse.headers.get('content-type')?.includes('application/json')) {
+          const devicesData = await devicesResponse.json();
+          await offlineSyncService.cacheApiData('/api/devices', devicesData);
+        }
+      } catch (error) {
+        console.log('Devices endpoint not available, skipping...');
       }
 
-      // Cache mobile status
-      const statusResponse = await fetch('/api/mobile/status');
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        await offlineSyncService.cacheApiData('/api/mobile/status', statusData);
+      // Cache mobile status (only if endpoint exists)
+      try {
+        const statusResponse = await fetch('/api/mobile/status');
+        if (statusResponse.ok && statusResponse.headers.get('content-type')?.includes('application/json')) {
+          const statusData = await statusResponse.json();
+          await offlineSyncService.cacheApiData('/api/mobile/status', statusData);
+        }
+      } catch (error) {
+        console.log('Mobile status endpoint not available, skipping...');
       }
 
-      // Cache settings
-      const settingsResponse = await fetch('/api/settings');
-      if (settingsResponse.ok) {
-        const settingsData = await settingsResponse.json();
-        await offlineSyncService.cacheApiData('/api/settings', settingsData);
+      // Cache settings (only if endpoint exists)
+      try {
+        const settingsResponse = await fetch('/api/settings');
+        if (settingsResponse.ok && settingsResponse.headers.get('content-type')?.includes('application/json')) {
+          const settingsData = await settingsResponse.json();
+          await offlineSyncService.cacheApiData('/api/settings', settingsData);
+        }
+      } catch (error) {
+        console.log('Settings endpoint not available, skipping...');
       }
 
       console.log('Essential data pre-cached for offline use');

@@ -204,4 +204,30 @@ router.get('/discovery', (req, res) => {
     }
 });
 
+// Peer sync endpoint for mobile interface
+router.post('/sync', async (req, res) => {
+    try {
+        const { deviceId, timestamp } = req.body;
+        
+        // Get current data
+        const parsedData = global.parsedData || [];
+        const devices = global.devices || new Map();
+        const lastIMEI = global.lastIMEI || null;
+        
+        // Return sync data
+        res.json({
+            success: true,
+            deviceId: peerSync ? peerSync.deviceId : 'mobile-server',
+            totalRecords: parsedData.length,
+            totalDevices: devices.size,
+            lastIMEI: lastIMEI,
+            syncTime: new Date().toISOString(),
+            message: 'Sync data provided successfully'
+        });
+    } catch (error) {
+        logger.error('Error in peer sync:', error);
+        res.status(500).json({ error: 'Failed to sync with peer' });
+    }
+});
+
 module.exports = router; 

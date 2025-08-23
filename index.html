@@ -83,6 +83,10 @@
             margin-top: 0;
             color: #fff;
         }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -90,7 +94,7 @@
         <h1>🚀 OHW Mobile Application</h1>
         <p>Galileo Sky Parser with Enhanced Device Management</p>
         
-        <div class="status">
+        <div class="status" id="status">
             <h3>📱 Mobile Installation</h3>
             <p>Your mobile application is being deployed...</p>
             <div class="loading"></div>
@@ -129,7 +133,7 @@
 
     <script>
         function checkDeployment() {
-            const statusDiv = document.querySelector('.status');
+            const statusDiv = document.getElementById('status');
             statusDiv.innerHTML = `
                 <h3>🔍 Checking Deployment Status...</h3>
                 <div class="loading"></div>
@@ -145,12 +149,19 @@
                             <p>Your mobile application is ready!</p>
                             <a href="https://haryowl.github.io/ohw-enhance/" class="button" style="margin-top: 10px;">🚀 Launch App</a>
                         `;
+                        statusDiv.className = 'status success';
                     } else {
                         statusDiv.innerHTML = `
                             <h3>⏳ Deployment in Progress</h3>
                             <p>GitHub Actions is still building your application...</p>
                             <div class="loading"></div>
                             <p>This may take a few minutes. Please check back soon.</p>
+                            <p><strong>Next Steps:</strong></p>
+                            <ol style="text-align: left; margin: 10px 0;">
+                                <li>Go to <a href="https://github.com/haryowl/ohw-enhance/settings/pages" style="color: #fff;">GitHub Pages Settings</a></li>
+                                <li>Set Source to "GitHub Actions"</li>
+                                <li>Wait for deployment to complete</li>
+                            </ol>
                         `;
                     }
                 })
@@ -160,6 +171,12 @@
                         <p>GitHub Actions is still building your application...</p>
                         <div class="loading"></div>
                         <p>This may take a few minutes. Please check back soon.</p>
+                        <p><strong>Next Steps:</strong></p>
+                        <ol style="text-align: left; margin: 10px 0;">
+                            <li>Go to <a href="https://github.com/haryowl/ohw-enhance/settings/pages" style="color: #fff;">GitHub Pages Settings</a></li>
+                            <li>Set Source to "GitHub Actions"</li>
+                            <li>Wait for deployment to complete</li>
+                        </ol>
                     `;
                 });
         }
