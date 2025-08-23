@@ -16,6 +16,7 @@ NC='\033[0m'
 
 print_status() { echo -e "${GREEN}✅ $1${NC}"; }
 print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+print_success() { echo -e "${GREEN}🎉 $1${NC}"; }
 
 # Check Termux
 if [ ! -d "/data/data/com.termux" ]; then
@@ -294,7 +295,7 @@ EOF
 
 chmod +x ~/ohw-*.sh
 
-print_success "🎉 Installation completed!"
+print_success "Installation completed!"
 echo ""
 echo "🚀 Start: ~/ohw-start.sh"
 echo "📱 Access: http://localhost:3001/mobile"
