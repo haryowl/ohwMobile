@@ -9,29 +9,20 @@ echo "========================================"
 echo "  OHW Mobile - Simple Installation"
 echo "========================================"
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-print_status() { echo -e "${GREEN}✅ $1${NC}"; }
-print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
-print_success() { echo -e "${GREEN}🎉 $1${NC}"; }
-
 # Check Termux
 if [ ! -d "/data/data/com.termux" ]; then
     echo "❌ This script must be run in Termux on Android"
     exit 1
 fi
 
-print_status "Termux detected"
+echo "✅ Termux detected"
 
 # Fix package issues
 echo "N" | dpkg --configure -a 2>/dev/null || true
 pkg update -y
 pkg install -y nodejs git wget curl
 
-print_status "Packages installed"
+echo "✅ Packages installed"
 
 # Clean up
 cd ~
@@ -295,7 +286,7 @@ EOF
 
 chmod +x ~/ohw-*.sh
 
-print_success "Installation completed!"
+echo "🎉 Installation completed!"
 echo ""
 echo "🚀 Start: ~/ohw-start.sh"
 echo "📱 Access: http://localhost:3001/mobile"
