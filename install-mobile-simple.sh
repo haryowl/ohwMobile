@@ -58,9 +58,13 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 const WebSocket = require('ws');
+const net = require('net');
+const dgram = require('dgram');
 
 const app = express();
 const PORT = 3001;
+const TCP_PORT = 8000;
+const UDP_PORT = 8001;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -93,6 +97,268 @@ function writeData(file, data) {
 if (!fs.existsSync(devicesFile)) writeData(devicesFile, []);
 if (!fs.existsSync(recordsFile)) writeData(recordsFile, []);
 if (!fs.existsSync(backupsFile)) writeData(backupsFile, []);
+
+// GalileoSky Parser
+class GalileoSkyParser {
+    constructor() {
+        this.streamBuffers = new Map();
+        this.isFirstPacket = new Map();
+    }
+
+    validatePacket(buffer) {
+        if (buffer.length < 3) {
+            return { valid: false, error: 'Packet too short' };
+        }
+
+        const header = buffer.readUInt8(0);
+        const length = buffer.readUInt16LE(1);
+        
+        if (length > 32767) {
+            return { valid: false, error: 'Invalid length' };
+        }
+
+        const expectedLength = length + 5; // HEAD + LENGTH + DATA + CRC
+        const hasUnsentData = buffer.length > expectedLength;
+        
+        return {
+            valid: true,
+            header,
+            length,
+            expectedLength,
+            hasUnsentData,
+            actualLength: Math.min(length, buffer.length - 5)
+        };
+    }
+
+    calculateCRC16Modbus(buffer) {
+        let crc = 0xFFFF;
+        for (let i = 0; i < buffer.length; i++) {
+            crc ^= buffer[i];
+            for (let j = 0; j < 8; j++) {
+                if (crc & 0x0001) {
+                    crc = (crc >> 1) ^ 0xA001;
+                } else {
+                    crc = crc >> 1;
+                }
+            }
+        }
+        return crc;
+    }
+
+    async parsePacket(buffer) {
+        try {
+            console.log('📡 Parsing GalileoSky packet:', buffer.toString('hex').toUpperCase());
+            
+            const validation = this.validatePacket(buffer);
+            if (!validation.valid) {
+                console.log('❌ Invalid packet:', validation.error);
+                return null;
+            }
+
+            const { header, length, actualLength } = validation;
+            const data = buffer.slice(3, 3 + actualLength);
+            
+            // Extract basic information
+            const parsedData = {
+                timestamp: new Date().toISOString(),
+                header: `0x${header.toString(16)}`,
+                length: actualLength,
+                rawData: data.toString('hex').toUpperCase(),
+                coordinates: null,
+                imei: null
+            };
+
+            // Try to extract IMEI (look for 15-digit pattern)
+            const dataHex = data.toString('hex');
+            const imeiMatch = dataHex.match(/([0-9a-f]{15})/i);
+            if (imeiMatch) {
+                parsedData.imei = imeiMatch[1];
+                console.log('📱 Found IMEI:', parsedData.imei);
+            }
+
+            // Try to extract coordinates
+            if (data.length >= 8) {
+                try {
+                    const lat = data.readInt32LE(0) / 1000000;
+                    const lon = data.readInt32LE(4) / 1000000;
+                    
+                    if (lat !== 0 && lon !== 0 && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                        parsedData.coordinates = { latitude: lat, longitude: lon };
+                        console.log('📍 Found coordinates:', lat, lon);
+                    }
+                } catch (e) {
+                    // Ignore coordinate parsing errors
+                }
+            }
+
+            return parsedData;
+        } catch (error) {
+            console.error('❌ Parsing error:', error);
+            return null;
+        }
+    }
+}
+
+// Initialize parser
+const galileoSkyParser = new GalileoSkyParser();
+
+// TCP Server for GalileoSky devices
+const tcpServer = net.createServer((socket) => {
+    const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
+    console.log(`🔌 TCP client connected: ${clientAddress}`);
+    
+    socket.on('data', async (data) => {
+        try {
+            console.log(`📡 Received TCP data from ${clientAddress}:`, data.toString('hex').toUpperCase());
+            
+            const parsedData = await galileoSkyParser.parsePacket(data);
+            if (parsedData) {
+                // Add to records
+                const records = readData(recordsFile);
+                const newRecord = {
+                    id: Date.now(),
+                    device_id: parsedData.imei || 'unknown',
+                    latitude: parsedData.coordinates?.latitude || 0,
+                    longitude: parsedData.coordinates?.longitude || 0,
+                    altitude: 0,
+                    speed: 0,
+                    course: 0,
+                    timestamp: parsedData.timestamp,
+                    data: parsedData,
+                    source: 'tcp',
+                    client_address: clientAddress,
+                    created_at: new Date().toISOString()
+                };
+                
+                records.push(newRecord);
+                writeData(recordsFile, records);
+                
+                // Update device if IMEI found
+                if (parsedData.imei) {
+                    const devices = readData(devicesFile);
+                    let device = devices.find(d => d.imei === parsedData.imei);
+                    
+                    if (!device) {
+                        device = {
+                            id: Date.now(),
+                            imei: parsedData.imei,
+                            name: `Device ${parsedData.imei}`,
+                            group: 'Auto-Detected',
+                            status: 'online',
+                            lastSeen: parsedData.timestamp,
+                            totalRecords: 0,
+                            created_at: new Date().toISOString()
+                        };
+                        devices.push(device);
+                    } else {
+                        device.lastSeen = parsedData.timestamp;
+                        device.status = 'online';
+                    }
+                    
+                    device.totalRecords = records.filter(r => r.device_id === parsedData.imei).length;
+                    writeData(devicesFile, devices);
+                }
+                
+                // Broadcast to WebSocket clients
+                broadcastUpdate('newData', newRecord);
+                
+                console.log(`✅ Processed TCP data from ${clientAddress}`);
+            }
+            
+            // Send confirmation
+            socket.write(Buffer.from([0x02, 0x00, 0x00]));
+            
+        } catch (error) {
+            console.error(`❌ Error processing TCP data from ${clientAddress}:`, error);
+            socket.write(Buffer.from([0x02, 0x3F, 0x00]));
+        }
+    });
+    
+    socket.on('close', () => {
+        console.log(`🔌 TCP client disconnected: ${clientAddress}`);
+    });
+    
+    socket.on('error', (error) => {
+        console.error(`❌ TCP socket error for ${clientAddress}:`, error);
+    });
+});
+
+// UDP Server for GalileoSky devices
+const udpServer = dgram.createSocket('udp4');
+
+udpServer.on('message', async (msg, rinfo) => {
+    try {
+        const clientAddress = `${rinfo.address}:${rinfo.port}`;
+        console.log(`📡 Received UDP data from ${clientAddress}:`, msg.toString('hex').toUpperCase());
+        
+        const parsedData = await galileoSkyParser.parsePacket(msg);
+        if (parsedData) {
+            // Add to records
+            const records = readData(recordsFile);
+            const newRecord = {
+                id: Date.now(),
+                device_id: parsedData.imei || 'unknown',
+                latitude: parsedData.coordinates?.latitude || 0,
+                longitude: parsedData.coordinates?.longitude || 0,
+                altitude: 0,
+                speed: 0,
+                course: 0,
+                timestamp: parsedData.timestamp,
+                data: parsedData,
+                source: 'udp',
+                client_address: clientAddress,
+                created_at: new Date().toISOString()
+            };
+            
+            records.push(newRecord);
+            writeData(recordsFile, records);
+            
+            // Update device if IMEI found
+            if (parsedData.imei) {
+                const devices = readData(devicesFile);
+                let device = devices.find(d => d.imei === parsedData.imei);
+                
+                if (!device) {
+                    device = {
+                        id: Date.now(),
+                        imei: parsedData.imei,
+                        name: `Device ${parsedData.imei}`,
+                        group: 'Auto-Detected',
+                        status: 'online',
+                        lastSeen: parsedData.timestamp,
+                        totalRecords: 0,
+                        created_at: new Date().toISOString()
+                    };
+                    devices.push(device);
+                } else {
+                    device.lastSeen = parsedData.timestamp;
+                    device.status = 'online';
+                }
+                
+                device.totalRecords = records.filter(r => r.device_id === parsedData.imei).length;
+                writeData(devicesFile, devices);
+            }
+            
+            // Broadcast to WebSocket clients
+            broadcastUpdate('newData', newRecord);
+            
+            console.log(`✅ Processed UDP data from ${clientAddress}`);
+        }
+        
+        // Send confirmation
+        const response = Buffer.from([0x02, 0x00, 0x00]);
+        udpServer.send(response, rinfo.port, rinfo.address);
+        
+    } catch (error) {
+        console.error(`❌ Error processing UDP data:`, error);
+        const errorResponse = Buffer.from([0x02, 0x3F, 0x00]);
+        udpServer.send(errorResponse, rinfo.port, rinfo.address);
+    }
+});
+
+udpServer.on('error', (error) => {
+    console.error('❌ UDP server error:', error);
+});
 
 // API Routes
 
@@ -283,8 +549,8 @@ app.get('/api/data/export', (req, res) => {
     }
     
     if (format === 'csv') {
-        const csv = 'timestamp,latitude,longitude,altitude,speed,course,device_id\n' +
-            records.map(r => `${r.timestamp},${r.latitude},${r.longitude},${r.altitude},${r.speed},${r.course},${r.device_id}`).join('\n');
+        const csv = 'timestamp,latitude,longitude,altitude,speed,course,device_id,source\n' +
+            records.map(r => `${r.timestamp},${r.latitude},${r.longitude},${r.altitude},${r.speed},${r.course},${r.device_id},${r.source || 'manual'}`).join('\n');
         
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=export.csv');
@@ -304,7 +570,7 @@ app.post('/api/data/backup', (req, res) => {
         records: readData(recordsFile)
     };
     backups.push(backup);
-    writeData(backupsFile, backups);
+    writeData(backupsFile, backup);
     res.json(backup);
 });
 
@@ -323,7 +589,9 @@ app.get('/api/performance', (req, res) => {
         active_devices: devices.filter(d => d.status === 'online').length,
         last_update: new Date().toISOString(),
         memory_usage: process.memoryUsage(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        tcp_port: TCP_PORT,
+        udp_port: UDP_PORT
     });
 });
 
@@ -338,7 +606,9 @@ app.get('/api/management', (req, res) => {
         total_records: records.length,
         total_backups: backups.length,
         storage_used: JSON.stringify(devices).length + JSON.stringify(records).length + JSON.stringify(backups).length,
-        last_backup: backups.length > 0 ? backups[backups.length - 1].timestamp : null
+        last_backup: backups.length > 0 ? backups[backups.length - 1].timestamp : null,
+        tcp_port: TCP_PORT,
+        udp_port: UDP_PORT
     });
 });
 
@@ -355,6 +625,16 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 OHW Mobile Full Server: http://localhost:${PORT}`);
     console.log(`📱 Full Mobile Interface: http://localhost:${PORT}/mobile`);
     console.log(`🌐 API Server: http://localhost:${PORT}/api`);
+});
+
+// Start TCP server for GalileoSky devices
+tcpServer.listen(TCP_PORT, '0.0.0.0', () => {
+    console.log(`📡 TCP Server listening on port ${TCP_PORT} for GalileoSky devices`);
+});
+
+// Start UDP server for GalileoSky devices
+udpServer.bind(UDP_PORT, '0.0.0.0', () => {
+    console.log(`📡 UDP Server listening on port ${UDP_PORT} for GalileoSky devices`);
 });
 
 // WebSocket for real-time updates
@@ -629,3 +909,12 @@ echo "- 🔄 Peer-to-Peer Synchronization"
 echo "- 💾 Backup & Restore Management"
 echo "- ⚡ Performance Monitoring"
 echo "- 🗺️ Offline Grid Support"
+echo ""
+echo "📡 Data Receiving Ports:"
+echo "- TCP: Port 8000 (for GalileoSky devices)"
+echo "- UDP: Port 8001 (for GalileoSky devices)"
+echo ""
+echo "🔍 Monitor Data Parsing:"
+echo "- Server logs: tail -f ~/ohwMobile/server.log"
+echo "- Latest data: curl http://localhost:3001/api/data/latest"
+echo "- Performance: curl http://localhost:3001/api/performance"
