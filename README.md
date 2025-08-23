@@ -1,289 +1,253 @@
-# 🚀 OHW Mobile Application - Galileo Sky Parser
+# 📱 OHW Mobile Application - Galileo Sky Parser
 
-**Enhanced IoT Device Management with Real-time Monitoring**
+A comprehensive mobile application for IoT device tracking, data management, and real-time monitoring built for Termux on Android devices.
 
-## 📱 **MOBILE INSTALLATION URL**
-```
-https://haryowl.github.io/ohw-enhance/
-```
+## 🚀 Quick Installation
 
-**🚀 DEPLOYMENT STATUS: ACTIVE - Ready for mobile installation!**
+### **For Fresh Mobile Phone (Android + Termux):**
 
-## 🌟 Features
-
-### Core Functionality
-- **Galileo Sky Protocol Parser**: Advanced IoT device data parsing and processing
-- **Real-time Device Tracking**: Live GPS tracking with interactive maps
-- **Enhanced Device Management**: Complete CRUD operations with status monitoring
-- **Data Export & Analytics**: Multiple export formats including custom SM format (.pfsl)
-- **Peer-to-Peer Sync**: Offline data synchronization between mobile devices
-- **Performance Optimization**: Adaptive performance modes for mobile devices
-
-### Mobile-Specific Features
-- **Progressive Web App (PWA)**: Installable mobile application
-- **Offline Support**: Full offline functionality with data caching
-- **Mobile Optimizations**: Battery, storage, and performance management
-- **Termux Integration**: Android terminal environment support
-- **Auto-Export**: Scheduled daily data exports at midnight
-
-## 📱 Mobile Installation
-
-### Quick Install URL
-```
-https://haryowl.github.io/ohw-enhance/
-```
-
-### Installation Steps
-
-1. **Open the URL** in your mobile browser
-2. **Add to Home Screen**: 
-   - iOS: Tap the share button → "Add to Home Screen"
-   - Android: Tap the menu → "Add to Home Screen" or "Install App"
-3. **Launch the App** from your home screen
-
-### Alternative Installation Methods
-
-#### Termux (Android)
 ```bash
-# Install Termux from F-Droid
-# Run the quick start script
-curl -sSL https://raw.githubusercontent.com/haryowl/ohw-enhance/main/termux-quick-start.sh | bash
+# 1. Install Termux from F-Droid or Google Play Store
+# 2. Open Termux and run:
+curl -s https://raw.githubusercontent.com/haryowl/ohwMobile/main/install-mobile.sh | bash
 ```
 
-#### Manual Installation
+### **Manual Installation:**
+
 ```bash
-# Clone the repository
-git clone https://github.com/haryowl/ohw-enhance.git
-cd ohw-enhance
+# Update packages
+pkg update -y && pkg upgrade -y
+
+# Install dependencies
+pkg install -y nodejs git curl wget
+
+# Clone repository
+git clone https://github.com/haryowl/ohwMobile.git
+cd ohwMobile
 
 # Install dependencies
 npm install
 
-# Start the application
+# Start application
 npm start
 ```
 
-## 🚀 Quick Start
+## 📱 Access Points
 
-### For Mobile Users
-1. Visit: `https://haryowl.github.io/ohw-enhance/`
-2. Install as PWA
-3. Configure your devices
-4. Start monitoring
+- **Mobile Interface:** `http://localhost:3001/mobile`
+- **Alternative URL:** `http://localhost:3001/mobile-frontend.html`
+- **API Server:** `http://localhost:3001`
 
-### For Developers
-```bash
-# Clone repository
-git clone https://github.com/haryowl/ohw-enhance.git
-cd ohw-enhance
+## 🎯 Features
 
-# Install dependencies
-npm install
-cd frontend && npm install
-cd ../backend && npm install
+### **📍 Live Tracking**
+- Real-time device location tracking
+- Device path history with map visualization
+- Distance calculation and statistics
+- Auto-follow and marker controls
 
-# Start development servers
-npm run dev
-```
+### **📊 Device Management**
+- Full CRUD operations (Create, Read, Update, Delete)
+- Device grouping and categorization
+- Real-time status monitoring
+- Device data viewing and analysis
 
-## 📊 Application Pages
+### **📈 Data Export**
+- Multiple formats: CSV, PFSL, JSON
+- Custom export templates with placeholders
+- Date/time range filtering
+- Device-specific filtering
+- Auto-export scheduling
 
-### Main Pages
-- **Dashboard** (`/`): Real-time overview with tracking map and status dashboard
-- **Device Management** (`/devices`): Complete device CRUD operations
-- **Data SM Export** (`/data-sm`): Custom data export with .pfsl format
-- **Peer-to-Peer** (`/peer-sync`): Device synchronization
-- **Performance** (`/performance`): System monitoring and optimization
+### **🔄 Peer-to-Peer Sync**
+- Device synchronization between mobile devices
+- Offline data sharing
+- Connection management
+- Sync statistics and monitoring
 
-### Features by Page
+### **💾 Backup Management**
+- Automated data backup
+- Backup restoration
+- Backup history and management
+- Data clearing and maintenance
 
-#### Dashboard
-- Real-time device statistics
-- Interactive tracking map
-- Status dashboard with health monitoring
+### **⚡ Performance Monitoring**
+- Real-time CPU, memory, and battery monitoring
+- Network status and connection tracking
 - System performance metrics
+- Adaptive performance modes
 
-#### Device Management
-- **Device List**: View all devices with search and filtering
-- **Device Configuration**: Advanced settings and field mapping
-- **Status Indicators**: Visual status with health scores
-- **CRUD Operations**: Create, edit, delete devices
-- **Data Export**: CSV export with filtering
+## 🛠️ Technical Stack
 
-#### Data SM Export
-- **Custom Field Mapping**: 12 specific fields for SM format
-- **Period Filtering**: Date and time range selection
-- **Device Filtering**: Export by specific device or all devices
-- **Auto-Export**: Daily midnight exports
-- **Template Naming**: Customizable filename patterns
-- **File Format**: CSV with .pfsl extension
+- **Backend:** Node.js, Express.js, SQLite
+- **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
+- **Maps:** Leaflet.js for interactive mapping
+- **Database:** SQLite for local storage
+- **Real-time:** WebSocket for live updates
+- **Platform:** Termux on Android
 
-#### Peer-to-Peer Sync
-- **Device Discovery**: Find nearby devices
-- **Data Synchronization**: Share data between devices
-- **Offline Support**: Work without internet connection
-- **Conflict Resolution**: Handle data conflicts
+## 📋 Application Pages
 
-#### Performance Dashboard
-- **Real-time Monitoring**: FPS, memory, battery, network
-- **Adaptive Modes**: Power save, balanced, performance
-- **Optimization Controls**: Manual performance adjustments
-- **Cache Management**: Storage and memory optimization
+1. **📍 Tracking** - Live device tracking with path history
+2. **📊 Devices** - Device management and configuration
+3. **📈 Export** - Data export with custom templates
+4. **🔄 Peer Sync** - Device synchronization
+5. **💾 Data Management** - Backup and restore operations
+6. **⚡ Performance** - System monitoring and metrics
 
 ## 🔧 Configuration
 
-### Environment Variables
+### **Environment Variables:**
 ```bash
-# Backend Configuration
+# Database configuration
+DB_PATH=./data/ohw.db
+
+# Server configuration
 PORT=3001
-NODE_ENV=production
-DATABASE_URL=sqlite:./data/app.db
+HOST=0.0.0.0
 
-# Frontend Configuration
-REACT_APP_API_URL=http://localhost:3001
-REACT_APP_WS_URL=ws://localhost:3001
+# Performance settings
+PERFORMANCE_MODE=balanced
+AUTO_BACKUP=true
+BACKUP_INTERVAL=24h
 ```
 
-### Mobile Configuration
-```bash
-# Termux Configuration
-export ANDROID_HOME=/data/data/com.termux/files/home
-export PATH=$PATH:$ANDROID_HOME/.local/bin
+### **Device Configuration:**
+- Device name and IMEI management
+- Group categorization
+- Custom field mapping
+- Export template configuration
 
-# Static IP Setup (for hotspot mode)
-./mobile-static-ip-setup.sh
-```
+## 📡 API Endpoints
 
-## 📁 Project Structure
-
-```
-ohw-main/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Application pages
-│   │   ├── services/       # API and utility services
-│   │   └── hooks/          # Custom React hooks
-│   ├── public/             # Static assets and PWA files
-│   └── package.json
-├── backend/                 # Node.js backend server
-│   ├── src/
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic services
-│   │   ├── models/         # Database models
-│   │   └── config/         # Configuration files
-│   └── package.json
-├── mobile-scripts/          # Mobile-specific scripts
-├── termux-scripts/          # Termux installation scripts
-└── docs/                    # Documentation
-```
-
-## 🔌 API Endpoints
-
-### Device Management
-- `GET /api/devices` - Get all devices
+### **Device Management:**
+- `GET /api/devices` - List all devices
 - `POST /api/devices` - Create new device
 - `PUT /api/devices/:id` - Update device
 - `DELETE /api/devices/:id` - Delete device
 
-### Data Export
-- `GET /api/data/sm/export` - Export Data SM format
-- `POST /api/data/sm/auto-export` - Schedule auto-export
-- `DELETE /api/data/sm/auto-export/:jobId` - Cancel auto-export
+### **Data Operations:**
+- `GET /api/data/latest` - Get latest data
+- `GET /api/data/export` - Export data
+- `POST /api/data/backup` - Create backup
+- `GET /api/data/backups` - List backups
 
-### Mobile Status
-- `GET /api/mobile/status` - Get mobile device status
-- `POST /api/mobile/optimize` - Control performance optimization
+### **Performance:**
+- `GET /api/performance` - System metrics
+- `GET /api/management` - Management info
 
-## 📱 Mobile Features
+## 🚀 Mobile Features
 
-### Progressive Web App (PWA)
-- **Installable**: Add to home screen
-- **Offline Support**: Service worker caching
-- **Push Notifications**: Real-time alerts
-- **Background Sync**: Data synchronization
+### **Optimized for Mobile:**
+- Touch-friendly interface
+- Responsive design
+- Offline capability
+- Battery optimization
+- Storage management
 
-### Performance Optimization
-- **Adaptive Rendering**: Adjusts based on device capabilities
-- **Battery Management**: Optimizes for mobile battery life
-- **Storage Management**: Efficient data storage
-- **Network Optimization**: Reduces data usage
+### **Termux Integration:**
+- Native Android terminal support
+- Background service management
+- Auto-startup configuration
+- System integration
 
-### Offline Capabilities
-- **Data Caching**: Stores data locally
-- **Offline Maps**: Grid-based mapping when online maps unavailable
-- **Sync Queue**: Queues operations for when online
-- **Conflict Resolution**: Handles data conflicts
+### **APK Support:**
+- Convert to native Android APK
+- Install as standalone app
+- Access to device features
+- Offline functionality
 
-## 🛠️ Development
+## 🔧 Development
 
-### Prerequisites
+### **Prerequisites:**
 - Node.js 16+
 - npm or yarn
 - Git
 
-### Development Setup
+### **Setup:**
 ```bash
 # Clone repository
-git clone https://github.com/haryowl/ohw-enhance.git
-cd ohw-enhance
+git clone https://github.com/haryowl/ohwMobile.git
+cd ohwMobile
 
 # Install dependencies
 npm install
-cd frontend && npm install
-cd ../backend && npm install
 
-# Start development servers
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
 ```
 
-### Building for Production
-```bash
-# Build frontend
-cd frontend
-npm run build
-
-# Start production server
-cd ../backend
-npm start
+### **Project Structure:**
+```
+ohwMobile/
+├── backend/           # Backend server code
+├── mobile-frontend.html  # Mobile interface
+├── install-mobile.sh     # Installation script
+├── package.json          # Dependencies
+└── README.md            # Documentation
 ```
 
 ## 📦 Deployment
 
-### GitHub Pages (Frontend)
+### **Termux Deployment:**
 ```bash
-# Build and deploy to GitHub Pages
-npm run build
-git add -A
-git commit -m "Deploy to GitHub Pages"
-git push origin main
+# Install on Termux
+curl -s https://raw.githubusercontent.com/haryowl/ohwMobile/main/install-mobile.sh | bash
+
+# Start application
+cd ~/ohwMobile
+./start-ohw.sh
 ```
 
-### Mobile Deployment
+### **Local Development:**
 ```bash
-# Deploy to mobile devices
-./mobile-install.sh
+# Clone and setup
+git clone https://github.com/haryowl/ohwMobile.git
+cd ohwMobile
+npm install
+npm start
 ```
+
+### **APK Creation:**
+```bash
+# Linux/Mac
+chmod +x create-apk.sh
+./create-apk.sh
+
+# Windows
+create-apk.bat
+```
+
+**Prerequisites for APK:**
+- Node.js 16+
+- Java JDK 8+
+- Android SDK
+- Android Build Tools
 
 ## 🔒 Security
 
-- **HTTPS**: Secure connections for all API calls
-- **Input Validation**: Server-side validation
-- **SQL Injection Protection**: Parameterized queries
-- **XSS Protection**: Content Security Policy
+- Local-only access by default
+- No external dependencies
+- Secure data storage
+- Access control for device management
 
-## 📈 Performance
+## ⚡ Performance
 
-### Mobile Optimizations
-- **Lazy Loading**: Images and components
-- **Virtual Scrolling**: Large data tables
-- **Image Compression**: Adaptive image quality
-- **Code Splitting**: Reduced bundle size
+### **Optimization Features:**
+- Adaptive performance modes
+- Memory usage optimization
+- Battery life management
+- Network efficiency
+- Storage optimization
 
-### Monitoring
-- **Real-time Metrics**: FPS, memory, battery
-- **Performance Dashboard**: Visual monitoring
-- **Auto-optimization**: Adaptive performance modes
+### **Monitoring:**
+- Real-time performance metrics
+- System resource tracking
+- Connection monitoring
+- Error logging and reporting
 
 ## 🤝 Contributing
 
@@ -295,40 +259,26 @@ git push origin main
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 📞 Support
 
-### Documentation
-- [Mobile Setup Guide](TERMUX_INSTALL.md)
-- [API Documentation](docs/API.md)
-- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- **Repository:** [https://github.com/haryowl/ohwMobile.git](https://github.com/haryowl/ohwMobile.git)
+- **Mobile Interface:** `http://localhost:3001/mobile`
+- **Documentation:** Check the README files in the repository
 
-### Issues
-- Report bugs: [GitHub Issues](https://github.com/haryowl/ohw-enhance/issues)
-- Feature requests: [GitHub Discussions](https://github.com/haryowl/ohw-enhance/discussions)
+## 🗺️ Roadmap
 
-### Community
-- **GitHub**: [haryowl/ohw-enhance](https://github.com/haryowl/ohw-enhance)
-- **Mobile URL**: https://haryowl.github.io/ohw-enhance/
-
-## 🎯 Roadmap
-
-### Upcoming Features
-- [ ] Advanced Analytics Dashboard
-- [ ] Machine Learning Predictions
-- [ ] Multi-language Support
-- [ ] Advanced Alert System
-- [ ] Cloud Backup Integration
-
-### Mobile Enhancements
-- [ ] Native Mobile App (React Native)
-- [ ] Advanced Offline Maps
-- [ ] Voice Commands
-- [ ] Wearable Integration
+- [ ] Enhanced offline capabilities
+- [ ] Multi-device synchronization
+- [ ] Advanced analytics dashboard
+- [ ] Cloud backup integration
+- [ ] Mobile app wrapper
+- [ ] Advanced mapping features
+- [ ] Real-time alerts system
+- [ ] API rate limiting
+- [ ] Enhanced security features
 
 ---
 
-**Install URL for Mobile**: https://haryowl.github.io/ohw-enhance/
-
-**GitHub Repository**: https://github.com/haryowl/ohw-enhance.git 
+**🎉 Ready to track your IoT devices on mobile! Start with the quick installation guide above.** 
