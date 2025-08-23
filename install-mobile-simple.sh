@@ -435,36 +435,56 @@ const tcpServer = net.createServer((socket) => {
     const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`;
     console.log(`🔌 TCP client connected: ${clientAddress}`);
     
+    // Stream buffer management for multi-packet data
+    let buffer = Buffer.alloc(0);
+    let unsentData = Buffer.alloc(0);
+    
     socket.on('data', async (data) => {
         try {
             console.log(`📡 Received TCP data from ${clientAddress}:`, data.toString('hex').toUpperCase());
             
-            // Parse the packet first to get the CRC for confirmation
-            const parsedData = await galileoSkyParser.parsePacket(data);
-            
-            // Send confirmation packet (0x02) with CRC from original packet
-            if (data.length >= 3) {
-                const header = data.readUInt8(0);
-                const rawLength = data.readUInt16LE(1);
-                const actualLength = rawLength & 0x7FFF;
-                
-                // Check if we have enough data for CRC
-                if (data.length >= actualLength + 5) { // Header(1) + Length(2) + Data + CRC(2)
-                    const packetData = data.slice(0, actualLength + 3); // Header + Length + Data
-                    const packetCRC = data.readUInt16LE(actualLength + 3); // CRC at the end
-                    
-                    // Create confirmation packet: 0x02 + CRC (3 bytes total)
-                    const confirmationPacket = Buffer.alloc(3);
-                    confirmationPacket[0] = 0x02; // Confirmation header
-                    confirmationPacket.writeUInt16LE(packetCRC, 1); // CRC from original packet
-                    
-                    // Send confirmation back to device
-                    if (socket.writable) {
-                        socket.write(confirmationPacket);
-                        console.log(`✅ Confirmation sent to ${clientAddress}:`, confirmationPacket.toString('hex').toUpperCase());
-                    }
-                }
+            // Combine any unsent data with new data (multi-packet handling)
+            if (unsentData.length > 0) {
+                buffer = Buffer.concat([unsentData, data]);
+                unsentData = Buffer.alloc(0);
+            } else {
+                buffer = data;
             }
+            
+            // Process all complete packets in the buffer
+            while (buffer.length >= 3) {  // Minimum packet size (HEAD + LENGTH)
+                const packetType = buffer.readUInt8(0);
+                const rawLength = buffer.readUInt16LE(1);
+                const actualLength = rawLength & 0x7FFF;  // Mask with 0x7FFF
+                const totalLength = actualLength + 3;  // HEAD + LENGTH + DATA
+                
+                console.log(`🔍 Processing packet - Type: 0x${packetType.toString(16)}, Length: ${actualLength}, Total: ${totalLength}, Buffer: ${buffer.length}`);
+                
+                // Check if we have a complete packet (including CRC)
+                if (buffer.length < totalLength + 2) {  // +2 for CRC
+                    console.log(`⚠️ Incomplete packet - waiting for more data. Buffer: ${buffer.length}, Need: ${totalLength + 2}`);
+                    unsentData = Buffer.from(buffer);
+                    break;
+                }
+                
+                // Extract the complete packet
+                const packet = buffer.slice(0, totalLength + 2);
+                buffer = buffer.slice(totalLength + 2);
+                
+                // Get the checksum from the received packet
+                const packetChecksum = packet.readUInt16LE(packet.length - 2);
+                
+                // Create confirmation packet: 0x02 + CRC (3 bytes total)
+                const confirmationPacket = Buffer.from([0x02, packetChecksum & 0xFF, (packetChecksum >> 8) & 0xFF]);
+                
+                // Send confirmation back to device
+                if (socket.writable) {
+                    socket.write(confirmationPacket);
+                    console.log(`✅ Confirmation sent to ${clientAddress}:`, confirmationPacket.toString('hex').toUpperCase());
+                }
+                
+                // Parse the packet data
+                const parsedData = await galileoSkyParser.parsePacket(packet);
             
             if (parsedData) {
                 // Add to records
@@ -555,30 +575,32 @@ udpServer.on('message', async (msg, rinfo) => {
         const clientAddress = `${rinfo.address}:${rinfo.port}`;
         console.log(`📡 Received UDP data from ${clientAddress}:`, msg.toString('hex').toUpperCase());
         
-        // Parse the packet first to get the CRC for confirmation
-        const parsedData = await galileoSkyParser.parsePacket(msg);
-        
-        // Send confirmation packet (0x02) with CRC from original packet
+        // UDP packets are typically complete, but we still need to validate
         if (msg.length >= 3) {
-            const header = msg.readUInt8(0);
+            const packetType = msg.readUInt8(0);
             const rawLength = msg.readUInt16LE(1);
-            const actualLength = rawLength & 0x7FFF;
+            const actualLength = rawLength & 0x7FFF;  // Mask with 0x7FFF
+            const totalLength = actualLength + 3;  // HEAD + LENGTH + DATA
             
-            // Check if we have enough data for CRC
-            if (msg.length >= actualLength + 5) { // Header(1) + Length(2) + Data + CRC(2)
-                const packetData = msg.slice(0, actualLength + 3); // Header + Length + Data
-                const packetCRC = msg.readUInt16LE(actualLength + 3); // CRC at the end
+            console.log(`🔍 Processing UDP packet - Type: 0x${packetType.toString(16)}, Length: ${actualLength}, Total: ${totalLength}, Buffer: ${msg.length}`);
+            
+            // Check if we have a complete packet (including CRC)
+            if (msg.length >= totalLength + 2) {  // +2 for CRC
+                // Extract the complete packet
+                const packet = msg.slice(0, totalLength + 2);
+                
+                // Get the checksum from the received packet
+                const packetChecksum = packet.readUInt16LE(packet.length - 2);
                 
                 // Create confirmation packet: 0x02 + CRC (3 bytes total)
-                const confirmationPacket = Buffer.alloc(3);
-                confirmationPacket[0] = 0x02; // Confirmation header
-                confirmationPacket.writeUInt16LE(packetCRC, 1); // CRC from original packet
+                const confirmationPacket = Buffer.from([0x02, packetChecksum & 0xFF, (packetChecksum >> 8) & 0xFF]);
                 
                 // Send confirmation back to device
                 udpServer.send(confirmationPacket, rinfo.port, rinfo.address);
                 console.log(`✅ UDP Confirmation sent to ${clientAddress}:`, confirmationPacket.toString('hex').toUpperCase());
-            }
-        }
+                
+                // Parse the packet data
+                const parsedData = await galileoSkyParser.parsePacket(packet);
         if (parsedData) {
             // Add to records
             const records = readData(recordsFile);
