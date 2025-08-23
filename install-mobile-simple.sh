@@ -379,16 +379,204 @@ function broadcastUpdate(type, data) {
 EOF
 
 # Copy the existing full mobile frontend
-cp ~/ohw/mobile-frontend.html ~/ohwMobile/public/mobile-frontend.html
+# cp ~/ohw/mobile-frontend.html ~/ohwMobile/public/mobile-frontend.html
 
-# If the file doesn't exist in the current directory, create it
-if [ ! -f "~/ohwMobile/public/mobile-frontend.html" ]; then
-    echo "Creating full mobile frontend..."
-    # Create the public directory
-    mkdir -p ~/ohwMobile/public
-    
-    # Download the full mobile frontend from the repository
-    curl -s https://raw.githubusercontent.com/haryowl/ohw/main/mobile-frontend.html > ~/ohwMobile/public/mobile-frontend.html
+# Download the full mobile frontend from the repository
+echo "📥 Downloading full mobile frontend..."
+mkdir -p ~/ohwMobile/public
+curl -s https://raw.githubusercontent.com/haryowl/ohw/main/mobile-frontend.html > ~/ohwMobile/public/mobile-frontend.html
+
+# Verify the download
+if [ -f "~/ohwMobile/public/mobile-frontend.html" ]; then
+    echo "✅ Full mobile frontend downloaded successfully"
+else
+    echo "❌ Failed to download mobile frontend, creating basic version..."
+    # Create a basic version as fallback
+    cat > ~/ohwMobile/public/mobile-frontend.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHW Mobile - Full Interface</title>
+    <style>
+        body { font-family: 'Courier New', monospace; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; color: #333; padding: 20px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; font-size: 12px; }
+        .device-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
+        .online { background: #4CAF50; }
+        .offline { background: #f44336; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛰️ OHW Mobile - Full Interface</h1>
+            <p>Complete Device Tracking & Management System</p>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📍 Live Tracking</h3>
+                <p>Real-time GPS tracking with interactive maps</p>
+            </div>
+            <div class="feature-card">
+                <h3>📊 Device Management</h3>
+                <p>Complete device registration and monitoring</p>
+            </div>
+            <div class="feature-card">
+                <h3>📈 Data Export</h3>
+                <p>Export data in CSV, PFSL, and JSON formats</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔄 Peer Sync</h3>
+                <p>Peer-to-peer data synchronization</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📊 System Status</h3>
+            <div id="status">Loading...</div>
+        </div>
+        
+        <div class="card">
+            <h3>📱 Device Management</h3>
+            <div id="devices">Loading...</div>
+            <button class="btn" onclick="addDevice()">➕ Add Device</button>
+            <button class="btn" onclick="loadDevices()">🔄 Refresh</button>
+            <button class="btn" onclick="exportData()">📤 Export Data</button>
+        </div>
+
+        <div class="card">
+            <h3>📈 Performance & Management</h3>
+            <div id="performance">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/management');
+                const status = await response.json();
+                document.getElementById('status').innerHTML = `
+                    <p>🟢 Full OHW Mobile Server Running</p>
+                    <p>📱 Total Devices: ${status.total_devices}</p>
+                    <p>📊 Total Records: ${status.total_records}</p>
+                    <p>💾 Backups: ${status.total_backups}</p>
+                    <p>⏰ Last Backup: ${status.last_backup || 'None'}</p>
+                `;
+            } catch (error) {
+                document.getElementById('status').innerHTML = 'Error loading status';
+            }
+        }
+
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                const devices = await response.json();
+                
+                if (devices.length === 0) {
+                    document.getElementById('devices').innerHTML = 'No devices found. Add your first device!';
+                    return;
+                }
+                
+                const html = devices.map(device => `
+                    <div class="device-item">
+                        <span class="status ${device.status === 'online' ? 'online' : 'offline'}"></span>
+                        <strong>${device.name}</strong> (${device.imei})
+                        <br><small>Group: ${device.group} | Records: ${device.totalRecords} | Last Seen: ${new Date(device.lastSeen).toLocaleString()}</small>
+                        <button class="btn" onclick="viewDevice(${device.id})">👁️ View</button>
+                        <button class="btn" onclick="deleteDevice(${device.id})">🗑️ Delete</button>
+                    </div>
+                `).join('');
+                
+                document.getElementById('devices').innerHTML = html;
+            } catch (error) {
+                document.getElementById('devices').innerHTML = 'Error loading devices';
+            }
+        }
+
+        async function loadPerformance() {
+            try {
+                const response = await fetch('/api/performance');
+                const perf = await response.json();
+                document.getElementById('performance').innerHTML = `
+                    <p>📱 Active Devices: ${perf.active_devices}</p>
+                    <p>💾 Memory Usage: ${Math.round(perf.memory_usage.heapUsed / 1024 / 1024)}MB</p>
+                    <p>⏱️ Uptime: ${Math.round(perf.uptime)}s</p>
+                    <p>🔄 Last Update: ${new Date(perf.last_update).toLocaleString()}</p>
+                `;
+            } catch (error) {
+                document.getElementById('performance').innerHTML = 'Error loading performance data';
+            }
+        }
+
+        function addDevice() {
+            const imei = prompt('Enter device IMEI:');
+            if (!imei) return;
+            
+            const name = prompt('Enter device name (optional):') || imei;
+            const group = prompt('Enter device group (optional):') || 'Default';
+            
+            fetch('/api/devices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imei, name, group })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('Device added successfully!');
+                    loadDevices();
+                    loadStatus();
+                }
+            })
+            .catch(error => alert('Error: ' + error.message));
+        }
+
+        function viewDevice(id) {
+            window.open(`/api/data/${id}/tracking`, '_blank');
+        }
+
+        function deleteDevice(id) {
+            if (!confirm('Delete this device?')) return;
+            
+            fetch(`/api/devices/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                alert('Device deleted!');
+                loadDevices();
+                loadStatus();
+            })
+            .catch(error => alert('Error: ' + error.message));
+        }
+
+        function exportData() {
+            window.open('/api/data/export?format=csv', '_blank');
+        }
+
+        // Load on page load
+        loadStatus();
+        loadDevices();
+        loadPerformance();
+        
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadStatus();
+            loadDevices();
+            loadPerformance();
+        }, 30000);
+    </script>
+</body>
+</html>
+EOF
 fi
 
 # Install dependencies
