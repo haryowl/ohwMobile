@@ -111,22 +111,43 @@ class GalileoSkyParser {
         }
 
         const header = buffer.readUInt8(0);
-        const length = buffer.readUInt16LE(1);
+        const rawLength = buffer.readUInt16LE(1);
         
-        if (length > 32767) {
-            return { valid: false, error: 'Invalid length' };
+        // Extract high-order bit for archive data indicator
+        const hasUnsentData = (rawLength & 0x8000) !== 0;
+        
+        // Extract 15 low-order bits for packet length
+        const actualLength = rawLength & 0x7FFF;
+
+        console.log(`🔍 Packet validation - Header: 0x${header.toString(16)}, RawLength: 0x${rawLength.toString(16)}, ActualLength: ${actualLength}, HasUnsentData: ${hasUnsentData}`);
+
+        // Check if we have the complete packet (HEAD + LENGTH + DATA + CRC)
+        const expectedLength = actualLength + 3;  // Header (1) + Length (2) + Data
+        if (buffer.length < expectedLength + 2) {  // +2 for CRC
+            console.log(`⚠️ Incomplete packet: expected ${expectedLength + 2} bytes, got ${buffer.length} bytes`);
+            return { valid: false, error: 'Incomplete packet' };
         }
 
-        const expectedLength = length + 5; // HEAD + LENGTH + DATA + CRC
-        const hasUnsentData = buffer.length > expectedLength;
-        
+        // For small packets, be more lenient with validation
+        if (actualLength < 100) {
+            console.log(`📦 Small packet detected (${actualLength} bytes) - accepting without strict validation`);
+            return {
+                valid: true,
+                header,
+                actualLength,
+                expectedLength,
+                hasUnsentData,
+                rawLength
+            };
+        }
+
         return {
             valid: true,
             header,
-            length,
+            actualLength,
             expectedLength,
             hasUnsentData,
-            actualLength: Math.min(length, buffer.length - 5)
+            rawLength
         };
     }
 
@@ -155,7 +176,7 @@ class GalileoSkyParser {
                 return null;
             }
 
-            const { header, length, actualLength } = validation;
+            const { header, actualLength, expectedLength } = validation;
             const data = buffer.slice(3, 3 + actualLength);
             
             // Extract basic information
@@ -170,10 +191,31 @@ class GalileoSkyParser {
 
             // Try to extract IMEI (look for 15-digit pattern)
             const dataHex = data.toString('hex');
+            console.log(`🔍 Analyzing data for IMEI: ${dataHex}`);
+            
+            // Look for IMEI pattern (15 digits) - common in GalileoSky packets
             const imeiMatch = dataHex.match(/([0-9a-f]{15})/i);
             if (imeiMatch) {
                 parsedData.imei = imeiMatch[1];
                 console.log('📱 Found IMEI:', parsedData.imei);
+            } else {
+                // Try alternative IMEI extraction methods
+                // Look for 8-byte IMEI pattern
+                const imei8Match = dataHex.match(/([0-9a-f]{16})/i);
+                if (imei8Match) {
+                    parsedData.imei = imei8Match[1];
+                    console.log('📱 Found 8-byte IMEI:', parsedData.imei);
+                } else {
+                    // Try to extract from specific positions in GalileoSky packets
+                    if (data.length >= 15) {
+                        // Common IMEI position in GalileoSky packets
+                        const potentialImei = data.slice(0, 15).toString('hex');
+                        if (/^[0-9a-f]{15}$/i.test(potentialImei)) {
+                            parsedData.imei = potentialImei;
+                            console.log('📱 Found IMEI at position 0:', parsedData.imei);
+                        }
+                    }
+                }
             }
 
             // Try to extract coordinates
