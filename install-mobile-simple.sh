@@ -698,45 +698,45 @@ udpServer.on('message', async (msg, rinfo) => {
                 const parsedData = await galileoSkyParser.parsePacket(packet);
                 
                 if (parsedData) {
-            // Update device tracking
-            if (parsedData.imei) {
-                updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
-            }
-            
-            // Add to records
-            const records = readData(recordsFile);
-            const newRecord = {
-                id: Date.now(),
-                device_id: parsedData.imei || 'unknown',
-                latitude: parsedData.coordinates?.latitude || 0,
-                longitude: parsedData.coordinates?.longitude || 0,
-                altitude: parsedData.altitude || 0,
-                speed: parsedData.speed || 0,
-                course: parsedData.tags['0x33']?.value?.direction || 0,
-                satellites: parsedData.satellites || 0,
-                timestamp: parsedData.datetime || parsedData.timestamp,
-                data: parsedData,
-                // Data SM specific fields
-                userData0: parsedData.userData0 || 0,
-                userData1: parsedData.userData1 || 0,
-                modbus0: parsedData.modbus0 || 0,
-                userData2: parsedData.userData2 || 0,
-                source: 'udp',
-                client_address: clientAddress,
-                created_at: new Date().toISOString()
-            };
-            
-            records.push(newRecord);
-            writeData(recordsFile, records);
-            
-                            // Update device if IMEI found
-                if (parsedData.imei) {
-                    const devices = readData(devicesFile);
-                    let device = devices.find(d => d.imei === parsedData.imei);
+                    // Update device tracking
+                    if (parsedData.imei) {
+                        updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
+                    }
                     
-                    if (!device) {
-                        device = {
-                            id: Date.now(),
+                    // Add to records
+                    const records = readData(recordsFile);
+                    const newRecord = {
+                        id: Date.now(),
+                        device_id: parsedData.imei || 'unknown',
+                        latitude: parsedData.coordinates?.latitude || 0,
+                        longitude: parsedData.coordinates?.longitude || 0,
+                        altitude: parsedData.altitude || 0,
+                        speed: parsedData.speed || 0,
+                        course: parsedData.tags['0x33']?.value?.direction || 0,
+                        satellites: parsedData.satellites || 0,
+                        timestamp: parsedData.datetime || parsedData.timestamp,
+                        data: parsedData,
+                        // Data SM specific fields
+                        userData0: parsedData.userData0 || 0,
+                        userData1: parsedData.userData1 || 0,
+                        modbus0: parsedData.modbus0 || 0,
+                        userData2: parsedData.userData2 || 0,
+                        source: 'udp',
+                        client_address: clientAddress,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    records.push(newRecord);
+                    writeData(recordsFile, records);
+                    
+                    // Update device if IMEI found
+                    if (parsedData.imei) {
+                        const devices = readData(devicesFile);
+                        let device = devices.find(d => d.imei === parsedData.imei);
+                        
+                        if (!device) {
+                            device = {
+                                id: Date.now(),
                             imei: parsedData.imei,
                             name: `Device ${parsedData.imei}`,
                             group: 'Auto-Detected',
@@ -751,14 +751,14 @@ udpServer.on('message', async (msg, rinfo) => {
                         device.status = 'online';
                     }
                     
-                    device.totalRecords = records.filter(r => r.device_id === parsedData.imei).length;
-                    writeData(devicesFile, devices);
-                }
-            
-            // Broadcast to WebSocket clients
-            broadcastUpdate('newData', newRecord);
-            
-            console.log(`✅ Processed UDP data from ${clientAddress}`);
+                        device.totalRecords = records.filter(r => r.device_id === parsedData.imei).length;
+                        writeData(devicesFile, devices);
+                    }
+                    
+                    // Broadcast to WebSocket clients
+                    broadcastUpdate('newData', newRecord);
+                    
+                    console.log(`✅ Processed UDP data from ${clientAddress}`);
                 }
             }
         }
