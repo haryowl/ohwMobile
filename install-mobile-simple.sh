@@ -564,8 +564,8 @@ const tcpServer = net.createServer((socket) => {
                 
                 // Parse the packet data
                 const parsedData = await galileoSkyParser.parsePacket(packet);
-            
-            if (parsedData) {
+                
+                if (parsedData) {
                 // Update device tracking
                 if (parsedData.imei) {
                     updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
@@ -696,7 +696,8 @@ udpServer.on('message', async (msg, rinfo) => {
                 
                 // Parse the packet data
                 const parsedData = await galileoSkyParser.parsePacket(packet);
-        if (parsedData) {
+                
+                if (parsedData) {
             // Update device tracking
             if (parsedData.imei) {
                 updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
@@ -758,6 +759,8 @@ udpServer.on('message', async (msg, rinfo) => {
             broadcastUpdate('newData', newRecord);
             
             console.log(`✅ Processed UDP data from ${clientAddress}`);
+                }
+            }
         }
         
         // Confirmation already sent above in the parsing section
