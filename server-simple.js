@@ -39,6 +39,19 @@ function writeData(file, data) {
     fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
+function generateCSV(records) {
+    const headers = ['Device ID', 'Latitude', 'Longitude', 'Speed', 'Timestamp'];
+    const rows = records.map(record => [
+        record.device_id || record.id,
+        record.latitude,
+        record.longitude,
+        record.speed || 0,
+        new Date(record.timestamp).toLocaleString()
+    ]);
+    
+    return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+}
+
 // Initialize data files
 if (!fs.existsSync(devicesFile)) writeData(devicesFile, []);
 if (!fs.existsSync(recordsFile)) writeData(recordsFile, []);
@@ -174,6 +187,69 @@ const server = http.createServer((req, res) => {
         }
         else if (pathname === '/api/data/sm/auto-export') {
             res.end(JSON.stringify([]));
+        }
+        else if (pathname === '/api/data/export') {
+            const format = parsedUrl.query.format || 'csv';
+            const records = readData(recordsFile);
+            
+            if (format === 'csv') {
+                const csvContent = generateCSV(records);
+                res.setHeader('Content-Type', 'text/csv');
+                res.setHeader('Content-Disposition', 'attachment; filename="data_export.csv"');
+                res.end(csvContent);
+            } else if (format === 'json') {
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', 'attachment; filename="data_export.json"');
+                res.end(JSON.stringify(records, null, 2));
+            } else {
+                res.end(JSON.stringify({ message: 'Export completed', format, count: records.length }));
+            }
+        }
+        else if (pathname === '/api/data/backup' && req.method === 'POST') {
+            try {
+                const devices = readData(devicesFile);
+                const records = readData(recordsFile);
+                const backups = readData(backupsFile);
+                
+                const backup = {
+                    id: Date.now().toString(),
+                    timestamp: new Date().toISOString(),
+                    devices_count: devices.length,
+                    records_count: records.length,
+                    data: { devices, records }
+                };
+                
+                backups.push(backup);
+                writeData(backupsFile, backups);
+                
+                res.end(JSON.stringify(backup));
+            } catch (error) {
+                res.writeHead(500);
+                res.end(JSON.stringify({ error: error.message }));
+            }
+        }
+        else if (pathname === '/api/data/backups' && req.method === 'GET') {
+            const backups = readData(backupsFile);
+            res.end(JSON.stringify(backups));
+        }
+        else if (pathname.startsWith('/api/data/backups/') && pathname.includes('/restore') && req.method === 'POST') {
+            const backupId = pathname.split('/')[4];
+            try {
+                const backups = readData(backupsFile);
+                const backup = backups.find(b => b.id === backupId);
+                
+                if (backup && backup.data) {
+                    writeData(devicesFile, backup.data.devices || []);
+                    writeData(recordsFile, backup.data.records || []);
+                    res.end(JSON.stringify({ message: 'Backup restored successfully' }));
+                } else {
+                    res.writeHead(404);
+                    res.end(JSON.stringify({ error: 'Backup not found' }));
+                }
+            } catch (error) {
+                res.writeHead(500);
+                res.end(JSON.stringify({ error: error.message }));
+            }
         }
         else {
             res.writeHead(404);
