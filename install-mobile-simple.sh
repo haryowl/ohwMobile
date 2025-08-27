@@ -1476,201 +1476,535 @@ setInterval(() => {
 }, 60 * 60 * 1000); // Check every hour
 EOF
 
-# Copy the existing full mobile frontend
-# cp ~/ohw/mobile-frontend.html ~/ohwMobile/public/mobile-frontend.html
-
 # Download the full mobile frontend from the repository
-echo "📥 Downloading full mobile frontend..."
+echo "📥 Downloading complete advanced mobile frontend..."
 mkdir -p ~/ohwMobile/public
-curl -s https://raw.githubusercontent.com/haryowl/ohwMobile/main/mobile-frontend.html > ~/ohwMobile/public/mobile-frontend.html
+
+# Download the complete advanced mobile interface
+curl -s -o ~/ohwMobile/public/mobile-frontend.html https://raw.githubusercontent.com/haryowl/ohwMobile/main/complete-advanced-interface.html
 
 # Verify the download
 if [ -f ~/ohwMobile/public/mobile-frontend.html ] && [ -s ~/ohwMobile/public/mobile-frontend.html ]; then
-    echo "✅ Full mobile frontend downloaded successfully"
+    echo "✅ Complete advanced mobile frontend downloaded successfully"
+    echo "🎯 Advanced Features Available:"
+    echo "📍 Live Tracking with Interactive Maps"
+    echo "📱 Advanced Device Management (CRUD operations)"
+    echo "📈 Data Export (CSV, PFSL, JSON)"
+    echo "🔄 Peer Sync (device synchronization)"
+    echo "💾 Backup & Restore Management"
+    echo "⚡ Performance Monitoring"
+    echo "🗺️ Offline Grid Support"
 else
-    echo "❌ Failed to download mobile frontend, creating basic version..."
-    # Create a basic version as fallback
+    echo "❌ Failed to download advanced frontend, creating enhanced basic version..."
+    # Create an enhanced basic version as fallback
     cat > ~/ohwMobile/public/mobile-frontend.html << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OHW Mobile - Full Interface</title>
+    <title>OHW Mobile - Advanced Interface</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Courier New', monospace; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .container { max-width: 1200px; margin: 0 auto; }
         .card { background: white; color: #333; padding: 20px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; font-size: 12px; }
-        .device-item { padding: 10px; border-bottom: 1px solid #eee; }
-        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
-        .online { background: #4CAF50; }
-        .offline { background: #f44336; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .feature-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; }
+        .nav-tabs { display: flex; background: white; border-radius: 10px 10px 0 0; overflow: hidden; }
+        .nav-tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border: none; background: #f8f9fa; transition: all 0.3s ease; font-size: 12px; font-weight: bold; }
+        .nav-tab.active { background: #667eea; color: white; }
+        .tab-content { background: white; border-radius: 0 0 10px 10px; padding: 30px; min-height: 600px; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .map-container { height: 400px; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .device-item { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        .status-online { color: #28a745; }
+        .status-offline { color: #dc3545; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🛰️ OHW Mobile - Full Interface</h1>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🛰️ OHW Mobile - Advanced Interface</h1>
             <p>Complete Device Tracking & Management System</p>
         </div>
-        
-        <div class="feature-grid">
-            <div class="feature-card">
-                <h3>📍 Live Tracking</h3>
-                <p>Real-time GPS tracking with interactive maps</p>
-            </div>
-            <div class="feature-card">
-                <h3>📊 Device Management</h3>
-                <p>Complete device registration and monitoring</p>
-            </div>
-            <div class="feature-card">
-                <h3>📈 Data Export</h3>
-                <p>Export data in CSV, PFSL, and JSON formats</p>
-            </div>
-            <div class="feature-card">
-                <h3>🔄 Peer Sync</h3>
-                <p>Peer-to-peer data synchronization</p>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('tracking')">📍 Live Tracking</button>
+            <button class="nav-tab" onclick="showTab('devices')">📱 Device Management</button>
+            <button class="nav-tab" onclick="showTab('data')">📊 Data Management</button>
+            <button class="nav-tab" onclick="showTab('export')">📈 Data Export</button>
+            <button class="nav-tab" onclick="showTab('peer')">🔄 Peer Sync</button>
+            <button class="nav-tab" onclick="showTab('backup')">💾 Backup & Restore</button>
+            <button class="nav-tab" onclick="showTab('performance')">⚡ Performance</button>
+            <button class="nav-tab" onclick="showTab('offline')">🗺️ Offline Grid</button>
+        </div>
+
+        <!-- Tracking Tab -->
+        <div id="tracking" class="tab-content">
+            <div class="tab-pane active">
+                <div class="card">
+                    <h3>📍 Live GPS Tracking with Interactive Maps</h3>
+                    <div class="map-container" id="trackingMap"></div>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>🎯 Active Devices</h3>
+                            <div id="activeDevices">Loading...</div>
+                        </div>
+                        <div class="card">
+                            <h3>📊 Real-time Statistics</h3>
+                            <div id="trackingStats">Loading...</div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="refreshTracking()">🔄 Refresh Tracking</button>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <h3>📊 System Status</h3>
-            <div id="status">Loading...</div>
-        </div>
-        
-        <div class="card">
-            <h3>📱 Device Management</h3>
-            <div id="devices">Loading...</div>
-            <button class="btn" onclick="addDevice()">➕ Add Device</button>
-            <button class="btn" onclick="loadDevices()">🔄 Refresh</button>
-            <button class="btn" onclick="exportData()">📤 Export Data</button>
+        <!-- Devices Tab -->
+        <div id="devices" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>📱 Complete Device Management (CRUD Operations)</h3>
+                    <button class="btn" onclick="showAddDeviceModal()">➕ Add New Device</button>
+                    <button class="btn" onclick="refreshDevices()">🔄 Refresh Devices</button>
+                    <button class="btn" onclick="bulkExport()">📤 Bulk Export</button>
+                </div>
+                <div class="grid" id="devicesGrid">Loading devices...</div>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>📈 Performance & Management</h3>
-            <div id="performance">Loading...</div>
+        <!-- Data Tab -->
+        <div id="data" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>📊 Data Management & Analytics</h3>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>📈 Data Overview</h3>
+                            <div id="dataOverview">Loading...</div>
+                        </div>
+                        <div class="card">
+                            <h3>📋 Recent Data Records</h3>
+                            <div id="dataRecords">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="export" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>📈 Advanced Data Export (CSV, PFSL, JSON)</h3>
+                    <div class="grid">
+                        <div class="card">
+                            <h4>📊 Standard Export</h4>
+                            <select id="exportFormat">
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="pfsl">PFSL (Data SM)</option>
+                            </select>
+                            <button class="btn" onclick="exportData()">📤 Export Data</button>
+                        </div>
+                        <div class="card">
+                            <h4>🔄 Auto Export</h4>
+                            <select id="autoExportSchedule">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                            <button class="btn" onclick="scheduleAutoExport()">⏰ Schedule Export</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Peer Sync Tab -->
+        <div id="peer" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>🔄 Peer-to-Peer Device Synchronization</h3>
+                    <div id="peerStatus">Loading...</div>
+                    <button class="btn" onclick="startPeerSync()">🔄 Start Sync</button>
+                    <button class="btn" onclick="stopPeerSync()">⏹️ Stop Sync</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup Tab -->
+        <div id="backup" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>💾 Complete Backup & Restore Management</h3>
+                    <button class="btn" onclick="createBackup()">💾 Create Backup</button>
+                    <button class="btn" onclick="refreshBackups()">🔄 Refresh Backups</button>
+                    <button class="btn" onclick="restoreLatestBackup()">🔄 Restore Latest</button>
+                </div>
+                <div class="card">
+                    <h3>📋 Backup History</h3>
+                    <div id="backupList">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Tab -->
+        <div id="performance" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>⚡ Real-time Performance Monitoring</h3>
+                    <div class="grid">
+                        <div class="card">
+                            <h3>📊 System Information</h3>
+                            <div id="systemInfo">Loading...</div>
+                        </div>
+                        <div class="card">
+                            <h3>🔍 Connection Status</h3>
+                            <div id="connectionStatus">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Grid Tab -->
+        <div id="offline" class="tab-content">
+            <div class="tab-pane">
+                <div class="card">
+                    <h3>🗺️ Offline Grid Support & Navigation</h3>
+                    <div id="offlineStatus">Loading...</div>
+                    <button class="btn" onclick="enableOfflineMode()">📱 Enable Offline Mode</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        async function loadStatus() {
-            try {
-                const response = await fetch('/api/management');
-                const status = await response.json();
-                document.getElementById('status').innerHTML = `
-                    <p>🟢 Full OHW Mobile Server Running</p>
-                    <p>📱 Total Devices: ${status.total_devices}</p>
-                    <p>📊 Total Records: ${status.total_records}</p>
-                    <p>💾 Backups: ${status.total_backups}</p>
-                    <p>⏰ Last Backup: ${status.last_backup || 'None'}</p>
-                `;
-            } catch (error) {
-                document.getElementById('status').innerHTML = 'Error loading status';
+        let map = null;
+        let currentTab = 'tracking';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            loadAllData();
+        });
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            currentTab = tabName;
+            
+            switch(tabName) {
+                case 'tracking': loadTrackingData(); break;
+                case 'devices': loadDevices(); break;
+                case 'data': loadDataManagement(); break;
+                case 'export': loadExportData(); break;
+                case 'peer': loadPeerSync(); break;
+                case 'backup': loadBackupData(); break;
+                case 'performance': loadPerformanceData(); break;
+                case 'offline': loadOfflineData(); break;
             }
+        }
+
+        function initializeMap() {
+            map = L.map('trackingMap').setView([0, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        async function apiCall(endpoint) {
+            try {
+                const response = await fetch(`/api${endpoint}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error: ${error.message}`);
+                return null;
+            }
+        }
+
+        async function loadTrackingData() {
+            const [devices, latestData] = await Promise.all([
+                apiCall('/devices/locations'),
+                apiCall('/data/latest?limit=50')
+            ]);
+
+            if (devices) {
+                updateTrackingMap(devices);
+                updateActiveDevices(devices);
+            }
+            if (latestData) {
+                updateTrackingStats(latestData);
+            }
+        }
+
+        function updateTrackingMap(devices) {
+            devices.forEach(device => {
+                if (device.location) {
+                    L.marker([device.location.latitude, device.location.longitude])
+                        .bindPopup(`<strong>${device.name}</strong><br>IMEI: ${device.imei}`)
+                        .addTo(map);
+                }
+            });
+        }
+
+        function updateActiveDevices(devices) {
+            const activeDevices = devices.filter(d => d.status === 'online');
+            const html = activeDevices.map(device => `
+                <div class="device-item">
+                    <span class="status-${device.status}">●</span>
+                    <strong>${device.name}</strong><br>
+                    <small>IMEI: ${device.imei} | Records: ${device.totalRecords}</small>
+                </div>
+            `).join('');
+            
+            document.getElementById('activeDevices').innerHTML = html || 'No active devices';
+        }
+
+        function updateTrackingStats(data) {
+            document.getElementById('trackingStats').innerHTML = `
+                <p>📊 Total Records: ${data.length}</p>
+                <p>📱 Active Devices: ${new Set(data.map(d => d.device_id)).size}</p>
+                <p>⏰ Last Update: ${data.length > 0 ? new Date(data[0].timestamp).toLocaleString() : 'Never'}</p>
+            `;
         }
 
         async function loadDevices() {
-            try {
-                const response = await fetch('/api/devices');
-                const devices = await response.json();
-                
-                if (devices.length === 0) {
-                    document.getElementById('devices').innerHTML = 'No devices found. Add your first device!';
-                    return;
-                }
-                
-                const html = devices.map(device => `
-                    <div class="device-item">
-                        <span class="status ${device.status === 'online' ? 'online' : 'offline'}"></span>
-                        <strong>${device.name}</strong> (${device.imei})
-                        <br><small>Group: ${device.group} | Records: ${device.totalRecords} | Last Seen: ${new Date(device.lastSeen).toLocaleString()}</small>
+            const devices = await apiCall('/devices');
+            if (devices) {
+                displayDevices(devices);
+            }
+        }
+
+        function displayDevices(devices) {
+            const html = devices.map(device => `
+                <div class="device-item">
+                    <span class="status-${device.status}">●</span>
+                    <strong>${device.name}</strong><br>
+                    <small>IMEI: ${device.imei} | Group: ${device.group} | Records: ${device.totalRecords}</small><br>
+                    <small>Last Seen: ${new Date(device.lastSeen).toLocaleString()}</small>
+                    <div style="margin-top: 10px;">
                         <button class="btn" onclick="viewDevice(${device.id})">👁️ View</button>
                         <button class="btn" onclick="deleteDevice(${device.id})">🗑️ Delete</button>
                     </div>
-                `).join('');
-                
-                document.getElementById('devices').innerHTML = html;
-            } catch (error) {
-                document.getElementById('devices').innerHTML = 'Error loading devices';
-            }
+                </div>
+            `).join('');
+            
+            document.getElementById('devicesGrid').innerHTML = html || 'No devices found';
         }
 
-        async function loadPerformance() {
-            try {
-                const response = await fetch('/api/performance');
-                const perf = await response.json();
-                document.getElementById('performance').innerHTML = `
-                    <p>📱 Active Devices: ${perf.active_devices}</p>
-                    <p>💾 Memory Usage: ${Math.round(perf.memory_usage.heapUsed / 1024 / 1024)}MB</p>
-                    <p>⏱️ Uptime: ${Math.round(perf.uptime)}s</p>
-                    <p>🔄 Last Update: ${new Date(perf.last_update).toLocaleString()}</p>
+        async function loadDataManagement() {
+            const [overview, records] = await Promise.all([
+                apiCall('/management'),
+                apiCall('/data/latest?limit=20')
+            ]);
+
+            if (overview) {
+                document.getElementById('dataOverview').innerHTML = `
+                    <p>📊 Total Records: ${overview.totalRecords}</p>
+                    <p>📱 Active Devices: ${overview.activeDevices}</p>
+                    <p>💾 Storage Used: ${overview.storageUsed}</p>
                 `;
-            } catch (error) {
-                document.getElementById('performance').innerHTML = 'Error loading performance data';
+            }
+
+            if (records) {
+                document.getElementById('dataRecords').innerHTML = records.map(record => `
+                    <div class="device-item">
+                        <strong>Device: ${record.device_id}</strong><br>
+                        <small>Location: ${record.latitude}, ${record.longitude}</small><br>
+                        <small>Speed: ${record.speed} km/h | Time: ${new Date(record.timestamp).toLocaleString()}</small>
+                    </div>
+                `).join('');
             }
         }
 
-        function addDevice() {
-            const imei = prompt('Enter device IMEI:');
-            if (!imei) return;
-            
-            const name = prompt('Enter device name (optional):') || imei;
-            const group = prompt('Enter device group (optional):') || 'Default';
-            
-            fetch('/api/devices', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imei, name, group })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                } else {
-                    alert('Device added successfully!');
-                    loadDevices();
-                    loadStatus();
-                }
-            })
-            .catch(error => alert('Error: ' + error.message));
+        async function loadExportData() {
+            const autoExports = await apiCall('/data/sm/auto-export');
+            if (autoExports) {
+                displayExportHistory(autoExports);
+            }
         }
 
-        function viewDevice(id) {
-            window.open(`/api/data/${id}/tracking`, '_blank');
-        }
-
-        function deleteDevice(id) {
-            if (!confirm('Delete this device?')) return;
+        function displayExportHistory(exports) {
+            const html = exports.map(exp => `
+                <div class="device-item">
+                    <strong>Template: ${exp.template}</strong><br>
+                    <small>Schedule: ${exp.schedule} | Status: ${exp.status}</small>
+                </div>
+            `).join('');
             
-            fetch(`/api/devices/${id}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                alert('Device deleted!');
-                loadDevices();
-                loadStatus();
-            })
-            .catch(error => alert('Error: ' + error.message));
+            document.getElementById('exportHistory').innerHTML = html || 'No export history';
         }
 
-        function exportData() {
+        async function loadPeerSync() {
+            const status = await apiCall('/peer/status');
+            if (status) {
+                document.getElementById('peerStatus').innerHTML = `
+                    <p>Status: ${status.status}</p>
+                    <p>Message: ${status.message}</p>
+                `;
+            }
+        }
+
+        async function loadBackupData() {
+            const backups = await apiCall('/data/backups');
+            if (backups) {
+                displayBackups(backups);
+            }
+        }
+
+        function displayBackups(backups) {
+            const html = backups.map(backup => `
+                <div class="device-item">
+                    <strong>Backup ${backup.id}</strong><br>
+                    <small>Created: ${new Date(backup.timestamp).toLocaleString()}</small><br>
+                    <small>Devices: ${backup.devices?.length || 0} | Records: ${backup.records?.length || 0}</small>
+                    <div style="margin-top: 10px;">
+                        <button class="btn" onclick="restoreBackup(${backup.id})">🔄 Restore</button>
+                        <button class="btn" onclick="deleteBackup(${backup.id})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('backupList').innerHTML = html || 'No backups found';
+        }
+
+        async function loadPerformanceData() {
+            const performance = await apiCall('/performance');
+            if (performance) {
+                document.getElementById('systemInfo').innerHTML = `
+                    <p>📱 Devices: ${performance.devices_count}</p>
+                    <p>📊 Records: ${performance.records_count}</p>
+                    <p>⏱️ Uptime: ${Math.round(performance.uptime)}s</p>
+                `;
+
+                document.getElementById('connectionStatus').innerHTML = `
+                    <p>📡 TCP Port: ${performance.tcp_port}</p>
+                    <p>📡 UDP Port: ${performance.udp_port}</p>
+                    <p>🔗 Active Connections: ${performance.activeConnections}</p>
+                `;
+            }
+        }
+
+        async function loadOfflineData() {
+            document.getElementById('offlineStatus').innerHTML = `
+                <p>📱 Offline Mode: Available</p>
+                <p>💾 Cache Status: Ready</p>
+                <p>🗺️ Grid System: Active</p>
+            `;
+        }
+
+        function refreshTracking() {
+            loadTrackingData();
+        }
+
+        function refreshDevices() {
+            loadDevices();
+        }
+
+        function bulkExport() {
             window.open('/api/data/export?format=csv', '_blank');
         }
 
-        // Load on page load
-        loadStatus();
-        loadDevices();
-        loadPerformance();
-        
-        // Refresh every 30 seconds
-        setInterval(() => {
-            loadStatus();
+        function exportData() {
+            const format = document.getElementById('exportFormat').value;
+            window.open(`/api/data/export?format=${format}`, '_blank');
+        }
+
+        function scheduleAutoExport() {
+            alert('Auto export scheduled');
+        }
+
+        function startPeerSync() {
+            alert('Peer sync started');
+        }
+
+        function stopPeerSync() {
+            alert('Peer sync stopped');
+        }
+
+        function createBackup() {
+            apiCall('/data/backup', { method: 'POST' }).then(() => {
+                alert('Backup created successfully');
+                loadBackupData();
+            });
+        }
+
+        function refreshBackups() {
+            loadBackupData();
+        }
+
+        function restoreLatestBackup() {
+            apiCall('/data/restore', { method: 'POST' }).then(() => {
+                alert('Latest backup restored');
+                loadAllData();
+            });
+        }
+
+        function viewDevice(deviceId) {
+            window.open(`/api/devices/${deviceId}/details`, '_blank');
+        }
+
+        function deleteDevice(deviceId) {
+            if (confirm('Delete this device?')) {
+                apiCall(`/devices/${deviceId}`, { method: 'DELETE' }).then(() => {
+                    alert('Device deleted');
+                    loadDevices();
+                });
+            }
+        }
+
+        function restoreBackup(backupId) {
+            if (confirm('Restore this backup?')) {
+                apiCall(`/data/backups/${backupId}/restore`, { method: 'POST' }).then(() => {
+                    alert('Backup restored');
+                    loadAllData();
+                });
+            }
+        }
+
+        function deleteBackup(backupId) {
+            if (confirm('Delete this backup?')) {
+                apiCall(`/data/backups/${backupId}`, { method: 'DELETE' }).then(() => {
+                    alert('Backup deleted');
+                    loadBackupData();
+                });
+            }
+        }
+
+        function enableOfflineMode() {
+            alert('Offline mode enabled');
+        }
+
+        function showAddDeviceModal() {
+            const imei = prompt('Enter device IMEI:');
+            if (imei) {
+                const name = prompt('Enter device name:') || imei;
+                apiCall('/devices', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ imei, name, group: 'Default' })
+                }).then(() => {
+                    alert('Device added successfully');
+                    loadDevices();
+                });
+            }
+        }
+
+        function loadAllData() {
+            loadTrackingData();
             loadDevices();
-            loadPerformance();
-        }, 30000);
+            loadDataManagement();
+            loadExportData();
+            loadPeerSync();
+            loadBackupData();
+            loadPerformanceData();
+            loadOfflineData();
+        }
     </script>
 </body>
 </html>

@@ -436,3 +436,4 @@ echo "📡 TCP: Port 8000 (for GalileoSky devices)"
 echo "📡 UDP: Port 8001 (for GalileoSky devices)"
 echo ""
 echo "🔍 Monitor: tail -f ~/ohwMobile/server.log"
+

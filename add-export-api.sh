@@ -268,3 +268,4 @@ echo "- Device CRUD operations"
 echo ""
 echo "📱 Access: http://localhost:3001/mobile"
 echo "🔍 Monitor: tail -f ~/ohwMobile/server.log"
+
