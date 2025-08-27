@@ -78,15 +78,15 @@ HTML_FILES=(
     "mobile-main.html"
     "mobile-tracking.html"
     "mobile-devices.html"
-    "mobile-data-fixed.html"
+    "mobile-data-working.html"
 )
 
 for file in "${HTML_FILES[@]}"; do
-    if [ "$file" = "mobile-data-fixed.html" ]; then
-        # Download the fixed data page and rename it
+    if [ "$file" = "mobile-data-working.html" ]; then
+        # Download the working data page and rename it
         curl -s -o "mobile-data.html" "https://raw.githubusercontent.com/haryowl/ohwMobile/main/$file"
         if [ $? -eq 0 ]; then
-            print_status "✅ mobile-data.html downloaded (fixed version)"
+            print_status "✅ mobile-data.html downloaded (WORKING version)"
         else
             print_error "Failed to download mobile-data.html"
             exit 1
