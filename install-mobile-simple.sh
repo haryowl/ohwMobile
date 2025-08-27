@@ -737,20 +737,20 @@ udpServer.on('message', async (msg, rinfo) => {
                         if (!device) {
                             device = {
                                 id: Date.now(),
-                            imei: parsedData.imei,
-                            name: `Device ${parsedData.imei}`,
-                            group: 'Auto-Detected',
-                            status: 'online',
-                            lastSeen: parsedData.datetime || parsedData.timestamp,
-                            totalRecords: 0,
-                            created_at: new Date().toISOString()
-                        };
-                        devices.push(device);
-                    } else {
-                        device.lastSeen = parsedData.datetime || parsedData.timestamp;
-                        device.status = 'online';
-                    }
-                    
+                                imei: parsedData.imei,
+                                name: `Device ${parsedData.imei}`,
+                                group: 'Auto-Detected',
+                                status: 'online',
+                                lastSeen: parsedData.datetime || parsedData.timestamp,
+                                totalRecords: 0,
+                                created_at: new Date().toISOString()
+                            };
+                            devices.push(device);
+                        } else {
+                            device.lastSeen = parsedData.datetime || parsedData.timestamp;
+                            device.status = 'online';
+                        }
+                        
                         device.totalRecords = records.filter(r => r.device_id === parsedData.imei).length;
                         writeData(devicesFile, devices);
                     }
