@@ -64,10 +64,10 @@ else
     exit 1
 fi
 
-# Download server.js
-curl -s -o server.js "https://raw.githubusercontent.com/haryowl/ohwMobile/main/server.js"
+# Download server.js (simplified version)
+curl -s -o server.js "https://raw.githubusercontent.com/haryowl/ohwMobile/main/server-simple.js"
 if [ $? -eq 0 ]; then
-    print_status "✅ server.js downloaded"
+    print_status "server.js downloaded (simplified version)"
 else
     print_error "Failed to download server.js"
     exit 1
@@ -93,12 +93,28 @@ done
 
 # Install Node.js dependencies
 print_status "Installing Node.js dependencies..."
-npm install > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    print_status "✅ Dependencies installed"
+if npm install > /dev/null 2>&1; then
+    print_status "Dependencies installed via npm"
 else
-    print_error "Failed to install dependencies"
-    exit 1
+    print_warning "npm install failed, creating minimal setup..."
+    
+    # Create a simple package.json with minimal dependencies
+    cat > package.json << 'EOF'
+{
+  "name": "ohw-mobile-modular",
+  "version": "2.0.0",
+  "description": "Modular OHW Mobile Interface for Device Tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {},
+  "keywords": ["gps", "tracking", "mobile", "galileosky", "iot"],
+  "author": "OHW Mobile Team",
+  "license": "MIT"
+}
+EOF
+    print_status "Created minimal package.json"
 fi
 
 # Create startup script
