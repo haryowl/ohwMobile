@@ -52,9 +52,61 @@ function generateCSV(records) {
     return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
 }
 
-// Initialize data files
-if (!fs.existsSync(devicesFile)) writeData(devicesFile, []);
-if (!fs.existsSync(recordsFile)) writeData(recordsFile, []);
+// Initialize data files with sample data
+if (!fs.existsSync(devicesFile)) {
+    writeData(devicesFile, [
+        {
+            id: 1,
+            name: "GPS-001",
+            imei: "123456789012345",
+            status: "online",
+            lastSeen: new Date().toISOString(),
+            totalRecords: 150,
+            latitude: 40.7128,
+            longitude: -74.0060
+        },
+        {
+            id: 2,
+            name: "GPS-002", 
+            imei: "987654321098765",
+            status: "offline",
+            lastSeen: new Date(Date.now() - 3600000).toISOString(),
+            totalRecords: 89,
+            latitude: 34.0522,
+            longitude: -118.2437
+        }
+    ]);
+}
+
+if (!fs.existsSync(recordsFile)) {
+    writeData(recordsFile, [
+        {
+            id: 1,
+            device_id: 1,
+            latitude: 40.7128,
+            longitude: -74.0060,
+            speed: 25,
+            timestamp: new Date().toISOString()
+        },
+        {
+            id: 2,
+            device_id: 1,
+            latitude: 40.7130,
+            longitude: -74.0058,
+            speed: 30,
+            timestamp: new Date(Date.now() - 300000).toISOString()
+        },
+        {
+            id: 3,
+            device_id: 2,
+            latitude: 34.0522,
+            longitude: -118.2437,
+            speed: 15,
+            timestamp: new Date(Date.now() - 3600000).toISOString()
+        }
+    ]);
+}
+
 if (!fs.existsSync(backupsFile)) writeData(backupsFile, []);
 
 // Create HTTP server
