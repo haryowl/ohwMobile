@@ -566,7 +566,7 @@ const tcpServer = net.createServer((socket) => {
                 const parsedData = await galileoSkyParser.parsePacket(packet);
                 
                 if (parsedData) {
-                // Update device tracking
+                    // Update device tracking
                 if (parsedData.imei) {
                     updateDeviceTracking(parsedData.imei, clientAddress, parsedData);
                 }
