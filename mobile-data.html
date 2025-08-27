@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHW Mobile - Data Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Courier New', monospace; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: #333; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .header { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 30px; 
+        }
+        .header h1 { 
+            font-size: 2.5em; 
+            margin-bottom: 10px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+        }
+        .nav-bar {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            transition: all 0.3s ease; 
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { 
+            background: #5a6fd8; 
+            transform: translateY(-2px); 
+        }
+        .btn-secondary { background: #6c757d; }
+        .btn-success { background: #28a745; }
+        .btn-danger { background: #dc3545; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        .card h3 { 
+            color: #667eea; 
+            margin-bottom: 15px; 
+            font-size: 1.3em; 
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 20px; 
+        }
+        .data-item { 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            padding: 15px; 
+            border: 1px solid #dee2e6; 
+            transition: all 0.3s ease; 
+        }
+        .data-item:hover { 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            transform: translateY(-2px); 
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .filter-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        .form-group input, .form-group select { 
+            padding: 8px 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 14px; 
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Data Management</h1>
+            <p>Data analytics, filtering, and records management</p>
+        </div>
+
+        <div class="nav-bar">
+            <div>
+                <a href="mobile-main.html" class="btn">🏠 Main Menu</a>
+                <a href="mobile-tracking.html" class="btn btn-secondary">📍 Tracking</a>
+                <a href="mobile-devices.html" class="btn btn-secondary">📱 Devices</a>
+            </div>
+            <div>
+                <button class="btn" onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear Filters</button>
+                <button class="btn btn-success" onclick="exportFilteredData()">📤 Export Data</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecords">--</div>
+                <div class="stat-label">Total Records</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeDevices">--</div>
+                <div class="stat-label">Active Devices</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="storageUsed">--</div>
+                <div class="stat-label">Storage Used</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastBackup">--</div>
+                <div class="stat-label">Last Backup</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgSpeed">--</div>
+                <div class="stat-label">Avg Speed (km/h)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dataPoints">--</div>
+                <div class="stat-label">Data Points Today</div>
+            </div>
+        </div>
+
+        <div class="filter-panel">
+            <h3>🔍 Data Filters</h3>
+            <div class="filter-row">
+                <div class="form-group">
+                    <label>Date Range:</label>
+                    <input type="date" id="dataFromDate">
+                </div>
+                <div class="form-group">
+                    <label>To:</label>
+                    <input type="date" id="dataToDate">
+                </div>
+                <div class="form-group">
+                    <label>Device:</label>
+                    <select id="dataDeviceFilter">
+                        <option value="">All Devices</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Min Speed (km/h):</label>
+                    <input type="number" id="minSpeed" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Max Speed (km/h):</label>
+                    <input type="number" id="maxSpeed" placeholder="200" min="0">
+                </div>
+            </div>
+            <div class="filter-row">
+                <button class="btn" onclick="applyDataFilters()">🔍 Apply Filters</button>
+                <button class="btn btn-secondary" onclick="clearFilters()">🗑️ Clear</button>
+                <button class="btn btn-success" onclick="saveFilterPreset()">💾 Save Preset</button>
+                <button class="btn btn-warning" onclick="loadFilterPreset()">📂 Load Preset</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>📈 Data Overview</h3>
+                <div id="dataOverview">Loading data overview...</div>
+            </div>
+            <div class="card">
+                <h3>📊 Data Analytics</h3>
+                <div id="dataAnalytics">Loading analytics...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 Recent Data Records</h3>
+            <div id="dataRecords">Loading records...</div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Global variables
+        let allRecords = [];
+        let filteredRecords = [];
+        let currentPage = 1;
+        const recordsPerPage = 20;
+        let devices = [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataManagement();
+            loadDevices();
+        });
+
+        // API calls
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error: ${error.message}`);
+                showNotification(`API Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Load data management
+        async function loadDataManagement() {
+            try {
+                const [overview, records, performance] = await Promise.all([
+                    apiCall('/management'),
+                    apiCall('/data/latest?limit=100'),
+                    apiCall('/performance')
+                ]);
+
+                allRecords = records;
+                filteredRecords = [...records];
+
+                updateDataOverview(overview);
+                updateDataAnalytics(records);
+                updateDataRecords();
+                updateStats(performance, records);
+            } catch (error) {
+                console.error('Error loading data management:', error);
+            }
+        }
+
+        // Load devices for filter
+        async function loadDevices() {
+            try {
+                devices = await apiCall('/devices');
+                populateDeviceFilter();
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        // Populate device filter
+        function populateDeviceFilter() {
+            const deviceFilter = document.getElementById('dataDeviceFilter');
+            deviceFilter.innerHTML = '<option value="">All Devices</option>';
+            
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = `${device.name || 'Unknown'} (${device.imei})`;
+                deviceFilter.appendChild(option);
+            });
+        }
+
+        // Update data overview
+        function updateDataOverview(overview) {
+            document.getElementById('dataOverview').innerHTML = `
+                <p>📊 Total Records: ${overview.totalRecords || 0}</p>
+                <p>📱 Active Devices: ${overview.activeDevices || 0}</p>
+                <p>💾 Storage Used: ${overview.storageUsed || 'Unknown'}</p>
+                <p>⏰ Last Backup: ${overview.lastBackup || 'None'}</p>
+                <p>📡 TCP Port: ${overview.tcp_port || 8000}</p>
+                <p>📡 UDP Port: ${overview.udp_port || 8001}</p>
+            `;
+        }
+
+        // Update data analytics
+        function updateDataAnalytics(records) {
+            if (records.length === 0) {
+                document.getElementById('dataAnalytics').innerHTML = '<p>No data available for analytics</p>';
+                return;
+            }
+
+            const speeds = records.map(r => r.speed || 0).filter(s => s > 0);
+            const avgSpeed = speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+            const maxSpeed = Math.max(...speeds, 0);
+            const minSpeed = Math.min(...speeds, 0);
+            
+            const today = new Date().toDateString();
+            const todayRecords = records.filter(r => new Date(r.timestamp).toDateString() === today);
+
+            document.getElementById('dataAnalytics').innerHTML = `
+                <p>📈 Average Speed: ${avgSpeed.toFixed(1)} km/h</p>
+                <p>🏃 Max Speed: ${maxSpeed.toFixed(1)} km/h</p>
+                <p>🐌 Min Speed: ${minSpeed.toFixed(1)} km/h</p>
+                <p>📅 Records Today: ${todayRecords.length}</p>
+                <p>📊 Total Data Points: ${records.length}</p>
+                <p>🕐 Latest Record: ${records.length > 0 ? new Date(records[0].timestamp).toLocaleString() : 'None'}</p>
+            `;
+        }
+
+        // Update data records
+        function updateDataRecords() {
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+            const html = pageRecords.map(record => `
+                <div class="data-item">
+                    <strong>Device: ${record.device_id}</strong><br>
+                    <small>Location: ${record.latitude}, ${record.longitude}</small><br>
+                    <small>Speed: ${record.speed || 0} km/h | Time: ${new Date(record.timestamp).toLocaleString()}</small>
+                </div>
+            `).join('');
+            
+            document.getElementById('dataRecords').innerHTML = html || 'No records found';
+            updatePagination();
+        }
+
+        // Update pagination
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="changePage(${currentPage - 1})">Previous</button>`;
+            }
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button onclick="changePage(${i})">${i}</button>`;
+                }
+            }
+            
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="changePage(${currentPage + 1})">Next</button>`;
+            }
+            
+            pagination.innerHTML = paginationHTML;
+        }
+
+        // Change page
+        function changePage(page) {
+            currentPage = page;
+            updateDataRecords();
+        }
+
+        // Update statistics
+        function updateStats(performance, records) {
+            document.getElementById('totalRecords').textContent = performance.records_count || 0;
+            document.getElementById('activeDevices').textContent = performance.activeDevices || 0;
+            document.getElementById('storageUsed').textContent = performance.storageUsed || 'Unknown';
+            document.getElementById('lastBackup').textContent = performance.lastBackup || 'None';
+            
+            const speeds = records.map(r => r.speed || 0).filter(s => s > 0);
+            const avgSpeed = speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+            document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(1);
+            
+            const today = new Date().toDateString();
+            const todayRecords = records.filter(r => new Date(r.timestamp).toDateString() === today);
+            document.getElementById('dataPoints').textContent = todayRecords.length;
+        }
+
+        // Apply data filters
+        function applyDataFilters() {
+            const fromDate = document.getElementById('dataFromDate').value;
+            const toDate = document.getElementById('dataToDate').value;
+            const deviceFilter = document.getElementById('dataDeviceFilter').value;
+            const minSpeed = parseFloat(document.getElementById('minSpeed').value) || 0;
+            const maxSpeed = parseFloat(document.getElementById('maxSpeed').value) || Infinity;
+
+            filteredRecords = allRecords.filter(record => {
+                const recordDate = new Date(record.timestamp);
+                const fromDateObj = fromDate ? new Date(fromDate) : null;
+                const toDateObj = toDate ? new Date(toDate) : null;
+                
+                const matchesDate = (!fromDateObj || recordDate >= fromDateObj) && 
+                                  (!toDateObj || recordDate <= toDateObj);
+                const matchesDevice = !deviceFilter || record.device_id == deviceFilter;
+                const matchesSpeed = (record.speed || 0) >= minSpeed && (record.speed || 0) <= maxSpeed;
+
+                return matchesDate && matchesDevice && matchesSpeed;
+            });
+
+            currentPage = 1;
+            updateDataRecords();
+            showNotification(`Filtered to ${filteredRecords.length} records`, 'success');
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('dataFromDate').value = '';
+            document.getElementById('dataToDate').value = '';
+            document.getElementById('dataDeviceFilter').value = '';
+            document.getElementById('minSpeed').value = '';
+            document.getElementById('maxSpeed').value = '';
+            
+            filteredRecords = [...allRecords];
+            currentPage = 1;
+            updateDataRecords();
+            showNotification('Filters cleared', 'success');
+        }
+
+        // Save filter preset
+        function saveFilterPreset() {
+            const preset = {
+                fromDate: document.getElementById('dataFromDate').value,
+                toDate: document.getElementById('dataToDate').value,
+                deviceFilter: document.getElementById('dataDeviceFilter').value,
+                minSpeed: document.getElementById('minSpeed').value,
+                maxSpeed: document.getElementById('maxSpeed').value
+            };
+            
+            localStorage.setItem('dataFilterPreset', JSON.stringify(preset));
+            showNotification('Filter preset saved', 'success');
+        }
+
+        // Load filter preset
+        function loadFilterPreset() {
+            const preset = localStorage.getItem('dataFilterPreset');
+            if (preset) {
+                const filterData = JSON.parse(preset);
+                document.getElementById('dataFromDate').value = filterData.fromDate || '';
+                document.getElementById('dataToDate').value = filterData.toDate || '';
+                document.getElementById('dataDeviceFilter').value = filterData.deviceFilter || '';
+                document.getElementById('minSpeed').value = filterData.minSpeed || '';
+                document.getElementById('maxSpeed').value = filterData.maxSpeed || '';
+                
+                applyDataFilters();
+                showNotification('Filter preset loaded', 'success');
+            } else {
+                showNotification('No filter preset found', 'error');
+            }
+        }
+
+        // Export filtered data
+        function exportFilteredData() {
+            const csvContent = generateCSV(filteredRecords);
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `data_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showNotification('Data export completed', 'success');
+        }
+
+        // Generate CSV
+        function generateCSV(records) {
+            const headers = ['Device ID', 'Latitude', 'Longitude', 'Speed', 'Timestamp'];
+            const rows = records.map(record => [
+                record.device_id,
+                record.latitude,
+                record.longitude,
+                record.speed || 0,
+                new Date(record.timestamp).toLocaleString()
+            ]);
+            
+            return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        }
+
+        // Control functions
+        function refreshData() {
+            loadDataManagement();
+            showNotification('Data refreshed', 'success');
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
