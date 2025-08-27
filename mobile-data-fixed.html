@@ -111,6 +111,16 @@
         .notification.show { transform: translateX(0); }
         .notification.success { background: #28a745; }
         .notification.error { background: #dc3545; }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .status-unknown { background: #ffc107; }
     </style>
 </head>
 <body>
@@ -145,6 +155,9 @@
                     </select>
                     <button class="btn btn-success" onclick="exportData()">Export</button>
                 </div>
+                <div id="exportStatus" style="margin-top: 10px; font-size: 12px;">
+                    <span class="status-indicator status-unknown"></span>Ready
+                </div>
             </div>
 
             <div class="feature-card">
@@ -154,7 +167,9 @@
                     <button class="btn btn-info" onclick="checkPeerStatus()">Check Status</button>
                     <button class="btn btn-success" onclick="syncWithPeer()">Sync Now</button>
                 </div>
-                <div id="peerStatus" style="margin-top: 10px; font-size: 12px;">Status: Unknown</div>
+                <div id="peerStatus" style="margin-top: 10px; font-size: 12px;">
+                    <span class="status-indicator status-unknown"></span>Unknown
+                </div>
             </div>
 
             <div class="feature-card">
@@ -164,7 +179,9 @@
                     <button class="btn btn-success" onclick="createBackup()">Create Backup</button>
                     <button class="btn btn-warning" onclick="showBackups()">View Backups</button>
                 </div>
-                <div id="backupStatus" style="margin-top: 10px; font-size: 12px;">Last backup: None</div>
+                <div id="backupStatus" style="margin-top: 10px; font-size: 12px;">
+                    <span class="status-indicator status-unknown"></span>No backups
+                </div>
             </div>
 
             <div class="feature-card">
@@ -174,7 +191,9 @@
                     <button class="btn btn-info" onclick="checkPerformance()">Check Performance</button>
                     <button class="btn btn-warning" onclick="optimizePerformance()">Optimize</button>
                 </div>
-                <div id="performanceStatus" style="margin-top: 10px; font-size: 12px;">Status: Unknown</div>
+                <div id="performanceStatus" style="margin-top: 10px; font-size: 12px;">
+                    <span class="status-indicator status-unknown"></span>Unknown
+                </div>
             </div>
 
             <div class="feature-card">
@@ -184,7 +203,9 @@
                     <button class="btn btn-info" onclick="toggleOfflineGrid()">Toggle Offline</button>
                     <button class="btn btn-secondary" onclick="downloadOfflineMaps()">Download Maps</button>
                 </div>
-                <div id="offlineStatus" style="margin-top: 10px; font-size: 12px;">Status: Online</div>
+                <div id="offlineStatus" style="margin-top: 10px; font-size: 12px;">
+                    <span class="status-indicator status-online"></span>Online Mode
+                </div>
             </div>
         </div>
 
@@ -210,9 +231,10 @@
             loadDataOverview();
             checkPeerStatus();
             checkPerformance();
+            updateBackupStatus();
         });
 
-        // API calls
+        // API calls with better error handling
         async function apiCall(endpoint, options = {}) {
             try {
                 const response = await fetch(`/api${endpoint}`, {
@@ -224,13 +246,17 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                return await response.json();
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
             } catch (error) {
-                console.error(`API Error: ${error.message}`);
-                showNotification(`API Error: ${error.message}`, 'error');
+                console.error(`API Error for ${endpoint}:`, error.message);
                 throw error;
             }
         }
@@ -250,15 +276,21 @@
                     <p>⏰ Last Backup: ${overview.lastBackup || 'None'}</p>
                 `;
 
-                const recordsHtml = records.map(record => `
-                    <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px;">
-                        <strong>Device: ${record.device_id}</strong><br>
-                        <small>Location: ${record.latitude}, ${record.longitude} | Speed: ${record.speed || 0} km/h</small>
-                    </div>
-                `).join('');
-                
-                document.getElementById('dataRecords').innerHTML = recordsHtml || 'No records found';
+                if (Array.isArray(records)) {
+                    const recordsHtml = records.map(record => `
+                        <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                            <strong>Device: ${record.device_id || record.id || 'Unknown'}</strong><br>
+                            <small>Location: ${record.latitude || 'N/A'}, ${record.longitude || 'N/A'} | Speed: ${record.speed || 0} km/h</small>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('dataRecords').innerHTML = recordsHtml || 'No records found';
+                } else {
+                    document.getElementById('dataRecords').innerHTML = 'No records available';
+                }
             } catch (error) {
+                document.getElementById('dataOverview').innerHTML = '<p style="color: #dc3545;">Error loading data overview</p>';
+                document.getElementById('dataRecords').innerHTML = '<p style="color: #dc3545;">Error loading records</p>';
                 console.error('Error loading data:', error);
             }
         }
@@ -266,7 +298,11 @@
         // Export data
         async function exportData() {
             const format = document.getElementById('exportFormat').value;
+            const statusEl = document.getElementById('exportStatus');
+            
             try {
+                statusEl.innerHTML = '<span class="status-indicator status-unknown"></span>Exporting...';
+                
                 const response = await fetch(`/api/data/export?format=${format}`);
                 if (response.ok) {
                     const blob = await response.blob();
@@ -276,22 +312,29 @@
                     a.download = `data_export.${format}`;
                     a.click();
                     window.URL.revokeObjectURL(url);
+                    
+                    statusEl.innerHTML = '<span class="status-indicator status-online"></span>Export completed';
                     showNotification(`Data exported in ${format.toUpperCase()} format`, 'success');
                 } else {
                     throw new Error('Export failed');
                 }
             } catch (error) {
-                showNotification('Export failed', 'error');
+                statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Export failed';
+                showNotification('Export failed: ' + error.message, 'error');
             }
         }
 
         // Check peer status
         async function checkPeerStatus() {
+            const statusEl = document.getElementById('peerStatus');
+            
             try {
+                statusEl.innerHTML = '<span class="status-indicator status-unknown"></span>Checking...';
                 const status = await apiCall('/peer/status');
-                document.getElementById('peerStatus').textContent = `Status: ${status.status}`;
+                statusEl.innerHTML = `<span class="status-indicator status-online"></span>${status.status}`;
             } catch (error) {
-                document.getElementById('peerStatus').textContent = 'Status: Error';
+                statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Error';
+                console.error('Peer status error:', error);
             }
         }
 
@@ -300,19 +343,24 @@
             try {
                 await apiCall('/peer/sync', { method: 'POST' });
                 showNotification('Peer sync completed', 'success');
+                checkPeerStatus();
             } catch (error) {
-                showNotification('Peer sync failed', 'error');
+                showNotification('Peer sync failed: ' + error.message, 'error');
             }
         }
 
         // Create backup
         async function createBackup() {
+            const statusEl = document.getElementById('backupStatus');
+            
             try {
+                statusEl.innerHTML = '<span class="status-indicator status-unknown"></span>Creating backup...';
                 await apiCall('/data/backup', { method: 'POST' });
-                document.getElementById('backupStatus').textContent = `Last backup: ${new Date().toLocaleString()}`;
+                statusEl.innerHTML = '<span class="status-indicator status-online"></span>Backup created';
                 showNotification('Backup created successfully', 'success');
             } catch (error) {
-                showNotification('Backup creation failed', 'error');
+                statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Backup failed';
+                showNotification('Backup creation failed: ' + error.message, 'error');
             }
         }
 
@@ -320,22 +368,46 @@
         async function showBackups() {
             try {
                 const backups = await apiCall('/data/backups');
-                showNotification(`Found ${backups.length} backups`, 'success');
+                const count = Array.isArray(backups) ? backups.length : 0;
+                showNotification(`Found ${count} backups`, 'success');
+                updateBackupStatus();
             } catch (error) {
-                showNotification('Failed to load backups', 'error');
+                showNotification('Failed to load backups: ' + error.message, 'error');
+            }
+        }
+
+        // Update backup status
+        async function updateBackupStatus() {
+            const statusEl = document.getElementById('backupStatus');
+            
+            try {
+                const backups = await apiCall('/data/backups');
+                const count = Array.isArray(backups) ? backups.length : 0;
+                if (count > 0) {
+                    statusEl.innerHTML = `<span class="status-indicator status-online"></span>${count} backup(s) available`;
+                } else {
+                    statusEl.innerHTML = '<span class="status-indicator status-offline"></span>No backups';
+                }
+            } catch (error) {
+                statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Error loading backups';
             }
         }
 
         // Check performance
         async function checkPerformance() {
+            const statusEl = document.getElementById('performanceStatus');
+            
             try {
+                statusEl.innerHTML = '<span class="status-indicator status-unknown"></span>Checking...';
                 const performance = await apiCall('/performance');
-                document.getElementById('performanceStatus').innerHTML = `
+                statusEl.innerHTML = `
+                    <span class="status-indicator status-online"></span>
                     CPU: ${performance.cpu}% | Memory: ${performance.memory}%<br>
                     Network: ${performance.network}
                 `;
             } catch (error) {
-                document.getElementById('performanceStatus').textContent = 'Status: Error';
+                statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Error';
+                console.error('Performance check error:', error);
             }
         }
 
@@ -348,13 +420,11 @@
         // Toggle offline grid
         function toggleOfflineGrid() {
             isOfflineMode = !isOfflineMode;
-            const status = document.getElementById('offlineStatus');
+            const statusEl = document.getElementById('offlineStatus');
             if (isOfflineMode) {
-                status.textContent = 'Status: Offline Mode Active';
-                status.style.color = '#28a745';
+                statusEl.innerHTML = '<span class="status-indicator status-online"></span>Offline Mode Active';
             } else {
-                status.textContent = 'Status: Online Mode';
-                status.style.color = '#333';
+                statusEl.innerHTML = '<span class="status-indicator status-online"></span>Online Mode';
             }
             showNotification(`Switched to ${isOfflineMode ? 'offline' : 'online'} mode`, 'success');
         }
@@ -370,6 +440,9 @@
         // Refresh data
         function refreshData() {
             loadDataOverview();
+            checkPeerStatus();
+            checkPerformance();
+            updateBackupStatus();
             showNotification('Data refreshed', 'success');
         }
 
