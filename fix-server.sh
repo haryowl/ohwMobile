@@ -1,3 +1,15 @@
+#!/bin/bash
+
+echo "🔧 Fixing broken server.js..."
+
+# Go to the ohwMobile directory
+cd ~/ohwMobile
+
+# Backup the broken server.js
+mv server.js server.js.broken
+
+# Create a simple working server.js
+cat > server.js << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -46,7 +58,7 @@ app.get('/api/devices', (req, res) => {
 
 app.get('/api/data/latest', (req, res) => {
     const records = readData(recordsFile);
-    res.json(records.slice(-50)); // Last 50 records
+    res.json(records.slice(-50));
 });
 
 app.get('/api/performance', (req, res) => {
@@ -114,3 +126,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📱 Mobile Interface: http://localhost:${PORT}/mobile`);
     console.log(`🌐 API Server: http://localhost:${PORT}/api`);
 });
+EOF
+
+echo "✅ Server.js fixed!"
+echo "🚀 Now try: ~/ohw-start.sh"
